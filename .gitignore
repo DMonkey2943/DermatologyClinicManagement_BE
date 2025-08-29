@@ -1,0 +1,21 @@
+# Python
+*.pyc
+*.pyo
+__pycache__/
+*.pyd
+*.db
+
+.env
+
+
+venv/
+.venv
+venv311/
+uploaded_files/
+chroma_db/
+alembic/
+
+create_admin.py
+*.json
+/*.py
+.git-credentials

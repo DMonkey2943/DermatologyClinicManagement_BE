@@ -1,0 +1,14 @@
+fastapi 
+uvicorn 
+pip-tools
+python-dotenv
+sqlalchemy 
+psycopg2-binary 
+alembic 
+python-jose[cryptography] 
+passlib[bcrypt] 
+python-multipart 
+python-decouple 
+pydantic
+pydantic[email]
+pydantic_settings
