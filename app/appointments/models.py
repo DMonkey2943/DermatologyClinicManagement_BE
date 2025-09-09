@@ -6,6 +6,8 @@ import enum
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
+from app.patients.models import Patient
+
 class AppointmentStatusEnum(enum.Enum):
     """Enum cho trạng thái lịch hẹn"""
     SCHEDULED = "SCHEDULED"     # Đã lên lịch
@@ -37,7 +39,7 @@ class Appointment(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationships
-    patient = relationship("Patient", back_populates="appointments")    
+    patient = relationship(lambda: Patient, back_populates="appointments")    
     doctor = relationship("User", foreign_keys=[doctor_id], back_populates="appointments_as_doctor")
     created_by_user = relationship("User", foreign_keys=[created_by], back_populates="appointments_created")
     medical_records = relationship("MedicalRecord", back_populates="appointment")

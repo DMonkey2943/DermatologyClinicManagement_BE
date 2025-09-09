@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, Enum, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from app.appointments.models import Appointment
 from app.database import Base
 import enum
 import uuid
@@ -8,14 +9,14 @@ from sqlalchemy.dialects.postgresql import UUID
 
 class GenderEnum(enum.Enum):
     """Enum cho giới tính"""
-    MALE = "Male"
-    FEMALE = "Female"
+    MALE = "MALE"
+    FEMALE = "FEMALE"
 
 class UserRoleEnum(enum.Enum):
     """Enum cho vai trò người dùng"""
-    ADMIN = "Admin"
-    DOCTOR = "Doctor"
-    STAFF = "Staff"
+    ADMIN = "ADMIN"
+    DOCTOR = "DOCTOR"
+    STAFF = "STAFF"
 
 class User(Base):
     __tablename__ = "users"  # Tên table trong DB
@@ -47,8 +48,8 @@ class User(Base):
 
     # Relationships - Quan hệ với các bảng khác
     doctor_profile = relationship("Doctor", back_populates="user", uselist=False)           # 1-1 với Doctor
-    appointments_as_doctor = relationship("Appointment", foreign_keys="[Appointment.doctor_id]", back_populates="doctor")   # Danh sách Appointment mà user này là bác sĩ.
-    appointments_created = relationship("Appointment", foreign_keys="[Appointment.created_by]", back_populates="created_by_user")   # Danh sách Appointment do user (staff) này tạo.
+    appointments_as_doctor = relationship("Appointment", foreign_keys=lambda: [Appointment.doctor_id], back_populates="doctor")   # Danh sách Appointment mà user này là bác sĩ.
+    appointments_created = relationship("Appointment", foreign_keys=lambda: [Appointment.created_by], back_populates="created_by_user")   # Danh sách Appointment do user (staff) này tạo.
     medical_records = relationship("MedicalRecord", back_populates="doctor")          # Danh sách MedicalRecord mà user này là bác sĩ.
     invoices_as_doctor = relationship("Invoice", foreign_keys="[Invoice.doctor_id]", back_populates="doctor")   # Danh sách Invoice mà user này là bác sĩ.
     invoices_created = relationship("Invoice", foreign_keys="[Invoice.created_by]", back_populates="created_by_user")   # Danh sách Invoice do user (staff) này tạo.
