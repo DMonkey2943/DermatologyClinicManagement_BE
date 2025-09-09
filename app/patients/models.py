@@ -8,8 +8,8 @@ from sqlalchemy.dialects.postgresql import UUID
 
 class GenderEnum(enum.Enum):
     """Enum cho giới tính"""
-    MALE = "Male"
-    FEMALE = "Female"
+    MALE = "MALE"
+    FEMALE = "FEMALE"
 
 class Patient(Base):
     """Model cho bảng PATIENT - Quản lý thông tin bệnh nhân"""
