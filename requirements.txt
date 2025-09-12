@@ -69,6 +69,8 @@ pydantic-core==2.33.2
     # via pydantic
 pydantic-settings==2.10.1
     # via -r requirements.in
+pyjwt==2.10.1
+    # via -r requirements.in
 pyproject-hooks==1.2.0
     # via
     #   build

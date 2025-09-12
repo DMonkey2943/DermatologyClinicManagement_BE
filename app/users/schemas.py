@@ -49,6 +49,17 @@ class UserResponse(UserBase):
     created_at: datetime                    # Thời gian tạo
     deleted_at: Optional[datetime] = None   # Thời gian xóa (soft delete)
 
+class UserLogin(BaseSchema):
+    username: str
+    password: str
+
+class UserTokenData(BaseSchema):
+    """Schema cho dữ liệu trong token"""
+    id: UUID
+    username: str
+    # full_name: Optional[str] = None
+    # email: EmailStr
+    role: UserRoleEnum
 
 
 # ================================ DOCTOR SCHEMAS ================================

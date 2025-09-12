@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     # JWT configuration
     secret_key: str = Field(..., env="SECRET_KEY")
     algorithm: str = Field(default="HS256", env="ALGORITHM")
-    access_token_expire_minutes: int = Field(default=30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
+    access_token_expire_minutes: int = Field(default=60, env="ACCESS_TOKEN_EXPIRE_MINUTES")
+    refresh_token_expire_days: int = Field(default=30, env="REFRESH_TOKEN_EXPIRE_DAYS")
     
     # App configuration
     app_name: str = Field(default="Acne Clinic API", env="APP_NAME")

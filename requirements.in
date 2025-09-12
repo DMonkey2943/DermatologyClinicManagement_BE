@@ -14,3 +14,4 @@ pydantic[email]
 pydantic_settings
 passlib
 bcrypt
+PyJWT

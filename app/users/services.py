@@ -5,7 +5,8 @@ from uuid import UUID
 from datetime import datetime
 import bcrypt
 from app.users.models import User
-from app.users.schemas import UserCreate, UserUpdate
+from app.users.schemas import UserCreate, UserUpdate, UserTokenData
+from fastapi import HTTPException
 
 class UserService:
     """Service class để xử lý logic liên quan đến User"""
@@ -23,6 +24,22 @@ class UserService:
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Xác thực password"""
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+    def validate_login(self, user_in: dict) -> Optional[User]:
+        # user = (
+        #     self.db.query(User)
+        #     .filter(User.username == user_in.get("username"))
+        #     .first()
+        # )
+        user = self.get_user_by_username(user_in.get("username", ""))
+        if not user:
+            # return None
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if not self.verify_password(user_in.get("password", ""), user.password):
+            return None
+            
+        return UserTokenData.model_validate(user)
 
     def create_user(self, user_in: UserCreate) -> User:
         """Tạo user mới"""
@@ -52,6 +69,20 @@ class UserService:
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         """Lấy user theo ID"""
         db_user = self.db.query(User).filter(and_(User.id == user_id, User.deleted_at.is_(None))).first()
+        if not db_user:
+            return None
+        return db_user
+    
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """Lấy user theo email"""
+        db_user = self.db.query(User).filter(and_(User.email == email, User.deleted_at.is_(None))).first()
+        if not db_user:
+            return None
+        return db_user
+    
+    def get_user_by_username(self, username: str) -> Optional[User]:
+        """Lấy user theo username"""
+        db_user = self.db.query(User).filter(and_(User.username == username, User.deleted_at.is_(None))).first()
         if not db_user:
             return None
         return db_user
