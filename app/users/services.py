@@ -94,6 +94,14 @@ class UserService:
         ).offset(skip).limit(limit).all()
         return users
     
+    def count_users(self) -> int:
+        """
+        Đếm tổng số người dùng đang active trong database.
+        - Chỉ đếm các user có is_active = True (nếu dùng soft delete).
+        - Trả về số nguyên là tổng số bản ghi.
+        """
+        return self.db.query(User).filter( User.deleted_at.is_(None)).count()
+    
     def update_user(self, user_id: UUID, user_update: UserUpdate) -> Optional[User]:
         """Cập nhật thông tin user"""
         db_user = self.get_user_by_id(user_id)

@@ -36,7 +36,7 @@ class PatientService:
         ).offset(skip).limit(limit).all()
         return patients
     
-    def search_patients(self, search_term: str) -> List[Patient]:
+    def search_patients(self, search_term: str, skip: int = 0, limit: int = 100) -> List[Patient]:
         """Tìm kiếm bệnh nhân theo tên hoặc số điện thoại"""
         searched_patients = self.db.query(Patient).filter(
             and_(
@@ -46,8 +46,20 @@ class PatientService:
                     Patient.phone_number.ilike(f"%{search_term}%")
                 )
             )
-        ).all()
+        ).offset(skip).limit(limit).all()
         return searched_patients
+    
+    def count_patients(self, search_term: Optional[str] = None) -> int:
+        """
+        Đếm tổng số bệnh nhân đang active, hỗ trợ tìm kiếm theo tên hoặc số điện thoại.
+        - Nếu search_term được cung cấp, đếm các bệnh nhân khớp với tìm kiếm.
+        - Nếu không, đếm tất cả bệnh nhân active.
+        """
+        query = self.db.query(Patient).filter(Patient.deleted_at.is_(None))
+        if search_term:
+            search = f"%{search_term}%"
+            query = query.filter(Patient.full_name.ilike(search) | Patient.phone_number.ilike(search))
+        return query.count()
     
     def update_patient(self, patient_id: UUID, patient_update: PatientUpdate) -> Optional[Patient]:
         """Cập nhật thông tin bệnh nhân"""

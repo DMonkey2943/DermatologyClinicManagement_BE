@@ -57,8 +57,8 @@ class UserTokenData(BaseSchema):
     """Schema cho dữ liệu trong token"""
     id: UUID
     username: str
-    # full_name: Optional[str] = None
-    # email: EmailStr
+    full_name: Optional[str] = None
+    email: EmailStr
     role: UserRoleEnum
 
 

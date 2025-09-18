@@ -8,6 +8,7 @@ from app.users.schemas import UserCreate, UserUpdate, UserResponse
 from app.users.services import UserService
 from app.core.authentication import protected_route
 from app.users.models import UserRoleEnum as RoleEnum
+from app.core.response import PaginationMeta, ResponseBase, PaginatedResponse
 
 router = APIRouter(
     prefix="/users",    # Tất cả endpoint sẽ có prefix /users
@@ -16,7 +17,7 @@ router = APIRouter(
 )  # Router cho grouping routes
 
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ResponseBase[UserResponse], status_code=status.HTTP_201_CREATED)
 def create_user(
     CREDENTIALS: AuthCredentialDepend,
     user: UserCreate,                   # Request body sử dụng schema UserCreate
@@ -44,10 +45,10 @@ def create_user(
             detail="Username đã được sử dụng"
         )
     db_user = repo.create_user(user)
-    return db_user
+    return ResponseBase(message="User created successfully", data=db_user)
 
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}", response_model=ResponseBase[UserResponse])
 def read_user(
     CREDENTIALS: AuthCredentialDepend,
     user_id: UUID, 
@@ -58,10 +59,10 @@ def read_user(
     db_user = repo.get_user_by_id(user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+    return ResponseBase(message="User retrieved successfully", data=db_user)
 
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("/", response_model=PaginatedResponse[UserResponse])
 @protected_route([RoleEnum.ADMIN])
 def read_users(
     CREDENTIALS: AuthCredentialDepend,
@@ -77,10 +78,14 @@ def read_users(
     """
     repo = UserService(DB)
     users = repo.get_users(skip=skip, limit=limit)
-    return users
+    total = repo.count_users()
+    page = (skip // limit) + 1
+    total_pages = (total // limit) + (1 if total % limit else 0)
+    meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)
+    return PaginatedResponse(message="Users retrieved successfully", data=users, meta=meta)  # Wrap với pagination
 
 
-@router.put("/{user_id}", response_model=UserResponse)
+@router.put("/{user_id}", response_model=ResponseBase[UserResponse])
 def update_user(
     CREDENTIALS: AuthCredentialDepend,
     user_id: UUID,
@@ -100,7 +105,7 @@ def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return db_user
+    return ResponseBase(message="User updated successfully", data=db_user)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

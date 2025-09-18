@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.core.dependencies import AuthCredentialDepend
 from app.database import get_db
-from app.users.schemas import UserLogin
+from app.users.schemas import UserLogin, UserResponse
 from app.users.services import UserService
 from app.auth.jwt_handler import create_access_token, create_refresh_token, verify_token, get_user_id_from_token
+from app.core.response import ResponseBase
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -44,7 +45,7 @@ def refresh_token(refresh_token: str):
     new_access_token = create_access_token(data=payload)
     return {"access_token": new_access_token, "token_type": "bearer"}
 
-@router.get("/me")
+@router.get("/me", response_model=ResponseBase[UserResponse])
 def get_current_user(
     CREDENTIALS: AuthCredentialDepend,
     DB: Session = Depends(get_db),
@@ -73,4 +74,4 @@ def get_current_user(
             detail="Inactive user"
         )
     
-    return user
+    return ResponseBase(message="Lấy thông tin tài khoản thành công", data=user)  # Wrap response

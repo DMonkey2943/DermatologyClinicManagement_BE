@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException, status
+from fastapi.responses import JSONResponse
+from app.core.response import ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.users.endpoints import router as users_router
 from app.auth.endpoints import router as auth_router
@@ -15,6 +17,20 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Cho phép các phương thức HTTP
     allow_headers=["Content-Type", "Authorization"],  # Cho phép header tùy chỉnh
 )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(message=exc.detail).model_dump()  # Sử dụng ErrorResponse
+    )
+
+@app.exception_handler(Exception)  # Handler cho các error bất ngờ
+async def general_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=ErrorResponse(message="Internal server error", details=str(exc)).model_dump()
+    )
 
 # Include các router
 app.include_router(users_router)    # Include routes từ users
