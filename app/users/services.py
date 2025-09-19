@@ -4,8 +4,8 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 import bcrypt
-from app.users.models import User
-from app.users.schemas import UserCreate, UserUpdate, UserTokenData
+from app.users.models import User, Doctor
+from app.users.schemas import UserCreate, UserUpdate, UserTokenData, UserResponse, DoctorCombinedCreate, DoctorCombinedUpdate, DoctorResponse
 from fastapi import HTTPException
 
 class UserService:
@@ -97,7 +97,7 @@ class UserService:
     def count_users(self) -> int:
         """
         Đếm tổng số người dùng đang active trong database.
-        - Chỉ đếm các user có is_active = True (nếu dùng soft delete).
+        - Chỉ đếm các user có deleted_at (nếu dùng soft delete).
         - Trả về số nguyên là tổng số bản ghi.
         """
         return self.db.query(User).filter( User.deleted_at.is_(None)).count()
@@ -128,5 +128,145 @@ class UserService:
 
 
 
+class DoctorService:
+    """Service class để xử lý logic liên quan đến Doctor"""
+    def __init__(self, db: Session):
+        self.db = db
+        self.user_service = UserService(db)
 
+    def create_doctor(self, doctor_in: DoctorCombinedCreate) -> DoctorResponse:
+        """Tạo bác sĩ mới (bao gồm cả User và Doctor) từ schema gộp"""
+        # Tạo UserCreate từ DoctorCombinedCreate
+        user_in = UserCreate(
+            username=doctor_in.username,
+            password=doctor_in.password,
+            full_name=doctor_in.full_name,
+            dob=doctor_in.dob,
+            gender=doctor_in.gender,
+            phone_number=doctor_in.phone_number,
+            email=doctor_in.email,
+            role="DOCTOR",  # Đảm bảo role là DOCTOR
+            avatar=doctor_in.avatar
+        )
+        
+        # Tạo User
+        db_user = self.user_service.create_user(user_in)
+        
+        # Tạo Doctor
+        db_doctor = Doctor(
+            user_id=db_user.id,
+            specialization=doctor_in.specialization
+        )
+        
+        self.db.add(db_doctor)
+        self.db.commit()
+        self.db.refresh(db_doctor)
+        
+        # Tạo response với thông tin User
+        doctor_response = DoctorResponse(
+            id=db_doctor.id,
+            user_id=db_doctor.user_id,
+            specialization=db_doctor.specialization,
+            user=UserResponse.from_orm(db_user)
+        )
+        return doctor_response
 
+    def get_doctor_by_id(self, doctor_id: UUID) -> Optional[Doctor]:
+        """Lấy bác sĩ theo ID"""
+        db_doctor = self.db.query(Doctor).filter(and_(Doctor.id == doctor_id)).first()
+        if not db_doctor:
+            return None
+            
+        # Lấy thông tin User liên kết
+        db_user = self.user_service.get_user_by_id(db_doctor.user_id)
+        if not db_user:
+            return None
+            
+        # Tạo response với thông tin User
+        doctor_response = DoctorResponse(
+            id=db_doctor.id,
+            user_id=db_doctor.user_id,
+            specialization=db_doctor.specialization,
+            user=UserResponse.from_orm(db_user)
+        )
+        return doctor_response
+
+    def get_doctors(self, skip: int = 0, limit: int = 10) -> list[Doctor]:
+        """Lấy danh sách bác sĩ với phân trang"""
+        doctors = self.db.query(Doctor).offset(skip).limit(limit).all()
+        result = []
+        for doctor in doctors:
+            user = self.user_service.get_user_by_id(doctor.user_id)
+            if user:
+                doctor_response = DoctorResponse(
+                    id=doctor.id,
+                    user_id=doctor.user_id,
+                    specialization=doctor.specialization,
+                    user=UserResponse.from_orm(user)
+                )
+                result.append(doctor_response)
+        return result
+
+    def count_doctors(self) -> int:
+        """Đếm tổng số bác sĩ"""
+        return self.db.query(Doctor).filter(Doctor.deleted_at.is_(None)).count()
+
+    def update_doctor(self, doctor_id: UUID, doctor_update: DoctorCombinedUpdate) -> Optional[DoctorResponse]:
+        """Cập nhật thông tin bác sĩ (bao gồm cả User) từ schema gộp"""
+        db_doctor = self.db.query(Doctor).filter(Doctor.id == doctor_id).first()
+        if not db_doctor:
+            return None
+
+        # Lấy thông tin User hiện tại
+        db_user = self.user_service.get_user_by_id(db_doctor.user_id)
+        if not db_user:
+            return None
+
+        # Tạo UserUpdate từ DoctorCombinedUpdate
+        user_update = UserUpdate(
+            username=doctor_update.username if doctor_update.username is not None else db_user.username,
+            full_name=doctor_update.full_name if doctor_update.full_name is not None else db_user.full_name,
+            dob=doctor_update.dob if doctor_update.dob is not None else db_user.dob,
+            gender=doctor_update.gender if doctor_update.gender is not None else db_user.gender,
+            phone_number=doctor_update.phone_number if doctor_update.phone_number is not None else db_user.phone_number,
+            email=doctor_update.email if doctor_update.email is not None else db_user.email,
+            avatar=doctor_update.avatar if doctor_update.avatar is not None else db_user.avatar,
+            is_active=doctor_update.is_active if doctor_update.is_active is not None else db_user.is_active
+        )
+
+        # Cập nhật User
+        db_user = self.user_service.update_user(db_doctor.user_id, user_update)
+        if not db_user:
+            return None
+
+        # Cập nhật Doctor
+        if doctor_update.specialization is not None:
+            db_doctor.specialization = doctor_update.specialization
+
+        self.db.commit()
+        self.db.refresh(db_doctor)
+
+        # Tạo response với thông tin User
+        doctor_response = DoctorResponse(
+            id=db_doctor.id,
+            user_id=db_doctor.user_id,
+            specialization=db_doctor.specialization,
+            user=UserResponse.from_orm(db_user)
+        )
+        return doctor_response
+
+    def delete_doctor(self, doctor_id: UUID) -> bool:
+        """Xóa bác sĩ (bao gồm cả User - soft delete)"""
+        db_doctor = self.db.query(Doctor).filter(Doctor.id == doctor_id).first()
+        if not db_doctor:
+            return False
+
+        # Xóa User liên kết
+        success = self.user_service.delete_user(db_doctor.user_id)
+        if not success:
+            return False
+        
+        # Xóa Doctor
+        db_doctor.deleted_at = datetime.utcnow()
+        self.db.commit()
+        return True

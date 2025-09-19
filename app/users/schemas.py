@@ -80,3 +80,28 @@ class DoctorResponse(DoctorBase):
     id: UUID
     user_id: UUID
     user: Optional[UserResponse] = None     # Thông tin user tương ứng
+    deleted_at: Optional[datetime] = None   # Thời gian xóa (soft delete)
+
+class DoctorCombinedCreate(BaseSchema):
+    """Schema gộp để tạo bác sĩ mới (gộp User và Doctor)"""
+    username: str
+    password: str
+    full_name: Optional[str] = None
+    dob: Optional[date] = None
+    gender: Optional[GenderEnum] = None
+    phone_number: str
+    email: EmailStr
+    avatar: Optional[str] = None
+    specialization: Optional[str] = None
+
+class DoctorCombinedUpdate(BaseSchema):
+    """Schema gộp để cập nhật bác sĩ (gộp User và Doctor)"""
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    dob: Optional[date] = None
+    gender: Optional[GenderEnum] = None
+    phone_number: Optional[str] = None
+    email: Optional[EmailStr] = None
+    avatar: Optional[str] = None
+    is_active: Optional[bool] = None
+    specialization: Optional[str] = None

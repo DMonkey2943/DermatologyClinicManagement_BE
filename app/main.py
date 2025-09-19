@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from app.core.response import ErrorResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.users.endpoints import router as users_router
+from app.users.doctor_endpoints import router as doctors_router
 from app.auth.endpoints import router as auth_router
 from app.patients.endpoints import router as patients_router
 from app.models import *
@@ -35,6 +36,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # Include các router
 app.include_router(users_router)    # Include routes từ users
 app.include_router(auth_router)     # Include routes từ auth
+app.include_router(doctors_router)    # Include routes từ doctors
 app.include_router(patients_router) # Include routes từ patients
 
 @app.get("/")
