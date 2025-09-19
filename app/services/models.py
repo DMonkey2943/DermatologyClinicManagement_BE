@@ -25,3 +25,4 @@ class Service(Base):
 
     # Relationships
     service_invoice_details = relationship("ServiceInvoiceDetail", back_populates="service")    # Danh sách chi tiết hóa đơn tiền dịch vụ.
+    service_indication_details = relationship("ServiceIndicationDetail", back_populates="service")  # Danh sách chi tiết phiếu chỉ định dịch vụ.
