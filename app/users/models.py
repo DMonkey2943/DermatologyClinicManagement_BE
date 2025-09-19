@@ -67,5 +67,8 @@ class Doctor(Base):
     # Thông tin chuyên môn
     specialization = Column(String)  # Chuyên khoa của bác sĩ
 
+    # Timestampss
+    deleted_at = Column(DateTime(timezone=True))                      # Soft delete - thời gian xóa
+
     # Relationships
     user = relationship("User", back_populates="doctor_profile")  # Quan hệ 1-1 với User
