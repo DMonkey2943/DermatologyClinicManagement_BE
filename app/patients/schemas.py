@@ -52,3 +52,8 @@ class PatientResponse(PatientBase):
     id: UUID
     created_at: datetime
     deleted_at: Optional[datetime] = None
+
+class PatientForeignKeyResponse(BaseSchema):
+    """Schema trả về thông tin Patient trong các quan hệ Foreign Key"""
+    id: UUID
+    full_name: str

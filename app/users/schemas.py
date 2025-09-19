@@ -61,6 +61,11 @@ class UserTokenData(BaseSchema):
     email: EmailStr
     role: UserRoleEnum
 
+class UserForeignKeyResponse(BaseSchema):
+    """Schema trả về thông tin User trong các quan hệ Foreign Key"""
+    id: UUID
+    full_name: Optional[str] = None
+
 
 # ================================ DOCTOR SCHEMAS ================================
 class DoctorBase(BaseSchema):

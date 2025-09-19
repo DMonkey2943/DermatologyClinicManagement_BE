@@ -8,8 +8,8 @@ import enum
 from app.appointments.models import AppointmentStatusEnum
 
 # Import các response từ schemas khác
-from app.patients.schemas import PatientResponse
-from app.users.schemas import UserResponse
+from app.patients.schemas import PatientForeignKeyResponse
+from app.users.schemas import UserForeignKeyResponse
 
 class BaseSchema(BaseModel):
     """Base schema cho tất cả các schema khác"""
@@ -44,6 +44,6 @@ class AppointmentResponse(AppointmentBase):
     id: UUID
     created_at: datetime
     created_by: UUID
-    patient: Optional[PatientResponse] = None    # Thông tin bệnh nhân
-    doctor: Optional[UserResponse] = None        # Thông tin bác sĩ
+    patient: Optional[PatientForeignKeyResponse] = None    # Thông tin bệnh nhân
+    doctor: Optional[UserForeignKeyResponse] = None        # Thông tin bác sĩ
     # created_by: Optional[UserResponse] = None # Thông tin người tạo lịch hẹn
