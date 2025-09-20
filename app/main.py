@@ -7,6 +7,7 @@ from app.users.doctor_endpoints import router as doctors_router
 from app.auth.endpoints import router as auth_router
 from app.patients.endpoints import router as patients_router
 from app.appointments.endpoints import router as appointments_router
+from app.medications.endpoints import router as medications_router
 from app.models import *
 
 app = FastAPI(title="Skin Clinic API")  # Tạo app FastAPI với title
@@ -35,11 +36,12 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 # Include các router
-app.include_router(users_router)    # Include routes từ users
 app.include_router(auth_router)     # Include routes từ auth
+app.include_router(users_router)    # Include routes từ users
 app.include_router(doctors_router)    # Include routes từ doctors
 app.include_router(patients_router) # Include routes từ patients
 app.include_router(appointments_router) # Include routes từ appointments
+app.include_router(medications_router) # Include routes từ medications
 
 @app.get("/")
 def read_root():
