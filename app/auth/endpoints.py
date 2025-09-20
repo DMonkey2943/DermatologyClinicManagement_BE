@@ -6,6 +6,7 @@ from app.users.schemas import UserLogin, UserResponse
 from app.users.services import UserService
 from app.auth.jwt_handler import create_access_token, create_refresh_token, verify_token, get_user_id_from_token
 from app.core.response import ResponseBase
+from app.users.schemas import UserTokenData
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -41,8 +42,10 @@ def refresh_token(refresh_token: str):
         payload = verify_token(refresh_token)
     except Exception as e:
         raise HTTPException(status_code=403, detail="Invalid refresh token")
+    
+    token_data = UserTokenData(**payload)
+    new_access_token = create_access_token(token_data)
 
-    new_access_token = create_access_token(data=payload)
     return {"access_token": new_access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=ResponseBase[UserResponse])
