@@ -5,7 +5,7 @@ from uuid import UUID
 import enum
 
 # Import các response từ schemas khác
-from app.medications.schemas import MedicationResponse
+from app.services.schemas import ServiceResponse
 
 class BaseSchema(BaseModel):
     """Base schema cho tất cả các schema khác"""
@@ -15,31 +15,31 @@ class BaseSchema(BaseModel):
         # Sử dụng enum values thay vì enum objects
         use_enum_values = True
 
-class PrescriptionBase(BaseSchema):
-    """Schema cơ bản cho Prescription"""
+class ServiceIndicationBase(BaseSchema):
+    """Schema cơ bản cho ServiceIndication"""
     medical_record_id: UUID                 # ID lịch sử khám bệnh
     notes: Optional[str] = None             # Ghi chú
 
-class PrescriptionCreate(PrescriptionBase):
-    """Schema tạo Prescription mới"""
+class ServiceIndicationCreate(ServiceIndicationBase):
+    """Schema tạo ServiceIndication mới"""
     pass
 
-class PrescriptionUpdate(BaseSchema):
-    """Schema cập nhật Prescription"""
+class ServiceIndicationUpdate(BaseSchema):
+    """Schema cập nhật ServiceIndication"""
     notes: Optional[str] = None
 
-class PrescriptionResponse(PrescriptionBase):
-    """Schema trả về thông tin Prescription"""
+class ServiceIndicationResponse(ServiceIndicationBase):
+    """Schema trả về thông tin ServiceIndication"""
     id: UUID
     created_at: datetime
 
 
 
-# ================================ PRESCRIPTION DETAIL SCHEMAS ================================
-class PrescriptionDetailBase(BaseSchema):
-    """Schema cơ bản cho Prescription Detail"""
-    prescription_id: UUID                   # ID toa thuốc
-    medication_id: UUID                     # ID thuốc
+# ================================ ServiceIndication DETAIL SCHEMAS ================================
+class ServiceIndicationDetailBase(BaseSchema):
+    """Schema cơ bản cho ServiceIndication Detail"""
+    service_indication_id: UUID             # ID phiếu chỉ định dịch vụ
+    service_id: UUID                        # ID dịch vụ
     quantity: int                           # Số lượng thuốc
     dosage: Optional[str] = None            # Liều lượng (VD: "1 viên x 2 lần/ngày")
     unit_price: float                       # Giá đơn vị
@@ -51,20 +51,20 @@ class PrescriptionDetailBase(BaseSchema):
             raise ValueError('Số lượng thuốc không thể âm')
         return v
 
-class PrescriptionDetailCreate(PrescriptionDetailBase):
-    """Schema tạo Prescription Detail mới"""
+class ServiceIndicationDetailCreate(ServiceIndicationDetailBase):
+    """Schema tạo ServiceIndication Detail mới"""
     pass
 
-class PrescriptionDetailUpdate(BaseSchema):
-    """Schema cập nhật Prescription Detail"""
-    prescription_id: Optional[UUID] = None   
-    medication_id: Optional[UUID] = None        
+class ServiceIndicationDetailUpdate(BaseSchema):
+    """Schema cập nhật ServiceIndication Detail"""
+    service_indication_id: Optional[UUID] = None   
+    service_id: Optional[UUID] = None        
     quantity: Optional[int] = None             
     dosage: Optional[str] = None                
     unit_price: Optional[float] = None          
 
-class PrescriptionDetailResponse(PrescriptionDetailBase):
-    """Schema trả về thông tin Prescription Detail"""
+class ServiceIndicationDetailResponse(ServiceIndicationDetailBase):
+    """Schema trả về thông tin ServiceIndication Detail"""
     id: UUID
-    medication: Optional[MedicationResponse] = None
+    medication: Optional[ServiceResponse] = None
     

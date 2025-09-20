@@ -44,7 +44,7 @@ class MedicalRecord(Base):
     appointment = relationship("Appointment", back_populates="medical_records")
     skin_images = relationship("SkinImage", back_populates="medical_record")
     prescriptions = relationship("Prescription", back_populates="medical_record")
-    service_indications = relationship("ServiceIndications", back_populates="medical_record")
+    service_indications = relationship("ServiceIndication", back_populates="medical_record")
     invoices = relationship("Invoice", back_populates="medical_record")
 
 
