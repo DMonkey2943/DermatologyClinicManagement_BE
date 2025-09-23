@@ -8,8 +8,8 @@ import enum
 from app.medical_records.models import MedicalRecordStatusEnum, ImageTypeEnum
 
 # Import các response từ schemas khác
-from app.patients.schemas import PatientResponse
-from app.users.schemas import UserResponse
+from app.patients.schemas import PatientForeignKeyResponse
+from app.users.schemas import UserForeignKeyResponse
 
 class BaseSchema(BaseModel):
     """Base schema cho tất cả các schema khác"""
@@ -44,8 +44,8 @@ class MedicalRecordResponse(MedicalRecordBase):
     """Schema trả về thông tin Medical Record"""
     id: UUID
     created_at: datetime
-    patient: Optional[PatientResponse] = None
-    doctor: Optional[UserResponse] = None
+    patient: Optional[PatientForeignKeyResponse] = None
+    doctor: Optional[UserForeignKeyResponse] = None
 
 
 
