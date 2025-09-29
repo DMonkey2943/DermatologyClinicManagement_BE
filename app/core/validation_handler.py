@@ -12,6 +12,9 @@ FIELD_LABELS: Dict[str, str] = {
     "gender": "Giới tính",
     "dob": "Ngày sinh",
     "role": "Vai trò",
+    "name": "Tên",
+    "price": "Giá",
+    "stock_quantity": "Số lượng tồn kho",
     # thêm các field khác khi cần...
 }
 
@@ -63,6 +66,9 @@ def generate_default_message(err: Dict[str, Any]) -> str:
         "enum": f"{label} có dữ liệu không hợp lệ",
         "string_pattern_mismatch": f"{label} có định dạng không hợp lệ",
         "date_from_datetime_parsing": f"{label} có định dạng Ngày không hợp lệ",
+        "float_parsing": f"{label} có định dạng không hợp lệ",
+        "int_parsing": f"{label} có định dạng không hợp lệ",
+        "int_from_float": f"{label} có định dạng không hợp lệ",
     }
 
     if err_type in error_messages:

@@ -1,7 +1,13 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
+
+# Import validators
+from app.medications.validators import (
+    validate_price,
+    validate_stock_quantity,
+)
 
 class BaseSchema(BaseModel):
     """Base schema cho tất cả các schema khác"""
@@ -13,25 +19,22 @@ class BaseSchema(BaseModel):
 
 class MedicationBase(BaseSchema):
     """Schema cơ bản cho Medication"""
-    name: str                               # Tên thuốc (bắt buộc)
-    dosage_form: str                        # Dạng thuốc (bắt buộc)
+    name: str = Field(max_length=250)                               # Tên thuốc (bắt buộc)
+    dosage_form: str = Field(max_length=50)                        # Dạng thuốc (bắt buộc)
     price: float                            # Giá (bắt buộc)
     stock_quantity: int                     # Số lượng tồn kho (bắt buộc)
-    description: Optional[str] = None       # Mô tả
+    description: Optional[str] = Field(max_length=250, default=None)       # Mô tả
 
-    @validator('price')
-    def validate_price(cls, v):
-        """Validator để đảm bảo giá >= 0"""
-        if v < 0:
-            raise ValueError('Giá không thể âm')
-        return v
+    @field_validator("price")
+    @classmethod
+    def _check_price(cls, v):
+        return validate_price(v)
 
-    @validator('stock_quantity')
-    def validate_stock_quantity(cls, v):
-        """Validator để đảm bảo số lượng >= 0"""
-        if v < 0:
-            raise ValueError('Số lượng tồn kho không thể âm')
-        return v
+    @field_validator("stock_quantity")
+    @classmethod
+    def _check_stock_quantity(cls, v):
+        return validate_stock_quantity(v)
+    
 
 class MedicationCreate(MedicationBase):
     """Schema tạo Medication mới"""
@@ -39,11 +42,16 @@ class MedicationCreate(MedicationBase):
 
 class MedicationUpdate(BaseSchema):
     """Schema cập nhật Medication"""
-    name: Optional[str] = None
-    dosage_form: Optional[str] = None
+    name: Optional[str] = Field(max_length=250, default=None)
+    dosage_form: Optional[str] = Field(max_length=50, default=None)
     price: Optional[float] = None
     stock_quantity: Optional[int] = None
-    description: Optional[str] = None
+    description: Optional[str] = Field(max_length=250, default=None)
+
+    @field_validator("price")
+    @classmethod
+    def _check_price(cls, v):
+        return validate_price(v)
 
 class MedicationResponse(MedicationBase):
     """Schema trả về thông tin Medication"""
