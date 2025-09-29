@@ -23,7 +23,7 @@ class ErrorResponse(BaseModel):
     """
     success: bool = False
     message: str
-    details: Optional[Dict[str, Any] | List[Any] | str] = None
+    details: Optional[Dict[str, Any] | List[Any] | str | List[Dict[str, str]] ] = None
 
 class PaginationMeta(BaseModel):
     """

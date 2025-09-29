@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.core.response import ErrorResponse
+from fastapi.exceptions import RequestValidationError
+from app.core.validation_handler import validation_handler_errors_out
 from fastapi.middleware.cors import CORSMiddleware
 from app.users.endpoints import router as users_router
 from app.users.doctor_endpoints import router as doctors_router
@@ -29,6 +31,19 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content=ErrorResponse(message=exc.detail).model_dump()  # Sử dụng ErrorResponse
     )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors_out = validation_handler_errors_out(exc)
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=ErrorResponse(
+            message="Request Validation Error", 
+            details=errors_out
+        ).model_dump(),
+    )
+
 
 @app.exception_handler(Exception)  # Handler cho các error bất ngờ
 async def general_exception_handler(request: Request, exc: Exception):
