@@ -42,6 +42,7 @@ class AppointmentService:
             doctor_id=appointment_in.doctor_id,
             created_by=appointment_in.created_by,
             appointment_date=appointment_in.appointment_date,
+            appointment_time=appointment_in.appointment_time,
             time_slot=appointment_in.time_slot,
             status=appointment_in.status,
             notes=appointment_in.notes
@@ -59,6 +60,7 @@ class AppointmentService:
             doctor_id=db_appointment.doctor_id,
             created_by=db_appointment.created_by,
             appointment_date=db_appointment.appointment_date,
+            appointment_time=db_appointment.appointment_time,
             time_slot=db_appointment.time_slot,
             status=db_appointment.status,
             notes=db_appointment.notes,
@@ -215,6 +217,7 @@ class AppointmentService:
             doctor_id=db_appointment.doctor_id,
             created_by=db_appointment.created_by,
             appointment_date=db_appointment.appointment_date,
+            appointment_time=db_appointment.appointment_time,
             time_slot=db_appointment.time_slot,
             status=db_appointment.status,
             notes=db_appointment.notes,

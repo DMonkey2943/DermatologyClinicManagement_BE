@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Date, Text
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Date, Text, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -29,7 +29,8 @@ class Appointment(Base):
     
     # Thông tin lịch hẹn - không được null
     appointment_date = Column(Date, nullable=False)                           # Ngày hẹn
-    time_slot = Column(String, nullable=False)                               # Khung giờ hẹn
+    appointment_time = Column(Time)                                          # Giờ hẹn
+    time_slot = Column(String, nullable=False)                               # Khung giờ hẹn 
     status = Column(Enum(AppointmentStatusEnum), nullable=False)             # Trạng thái lịch hẹn
     
     # Thông tin bổ sung
