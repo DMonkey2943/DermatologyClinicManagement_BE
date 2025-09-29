@@ -15,6 +15,9 @@ FIELD_LABELS: Dict[str, str] = {
     "name": "Tên",
     "price": "Giá",
     "stock_quantity": "Số lượng tồn kho",
+    "appointment_date": "Ngày hẹn khám",
+    "appointment_time": "Giờ hẹn khám",
+    "notes": "Ghi chú",
     # thêm các field khác khi cần...
 }
 
@@ -69,6 +72,7 @@ def generate_default_message(err: Dict[str, Any]) -> str:
         "float_parsing": f"{label} có định dạng không hợp lệ",
         "int_parsing": f"{label} có định dạng không hợp lệ",
         "int_from_float": f"{label} có định dạng không hợp lệ",
+        "time_parsing": f"{label} có định dạng không hợp lệ"
     }
 
     if err_type in error_messages:

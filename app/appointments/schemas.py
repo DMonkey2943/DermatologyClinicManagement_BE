@@ -1,11 +1,17 @@
-from pydantic import BaseModel, EmailStr, validator
-from typing import Optional, List
-from datetime import datetime, date
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional
+from datetime import datetime, date, time
 from uuid import UUID
 import enum
 
 # Import các enum từ models
 from app.appointments.models import AppointmentStatusEnum
+# Import validators
+from app.appointments.validators import (
+    validate_appointment_date, 
+    validate_appointment_time,
+    # validate_appointment_time_for_date,
+)
 
 # Import các response từ schemas khác
 from app.patients.schemas import PatientForeignKeyResponse
@@ -24,9 +30,34 @@ class AppointmentBase(BaseSchema):
     patient_id: UUID                        # ID bệnh nhân (bắt buộc)
     doctor_id: UUID                         # ID bác sĩ (bắt buộc)
     appointment_date: date                  # Ngày hẹn (bắt buộc)
-    time_slot: str                          # Khung giờ (bắt buộc)
+    appointment_time: time                  # Giờ hẹn (bắt buộc)
+    time_slot: str = Field(max_length=100, default="30 phút")                          # Khung giờ (bắt buộc)
     status: AppointmentStatusEnum           # Trạng thái (bắt buộc)
-    notes: Optional[str] = None             # Ghi chú
+    notes: Optional[str] = Field(max_length=250, default=None)             # Ghi chú
+
+    @field_validator("appointment_date")
+    @classmethod
+    def check_appointment_date(cls, value):
+        """Validate ngày hẹn"""
+        return validate_appointment_date(value)
+
+    @field_validator("appointment_time")
+    @classmethod
+    def check_appointment_time(cls, value):
+        """Validate giờ hẹn"""
+        return validate_appointment_time(value)
+
+    # Model-level validator để kiểm cả date + time cùng lúc (mode="after")
+    # @model_validator(mode="after")
+    # def check_date_and_time(self) -> "AppointmentBase":
+    #     # self là model instance, có attribute appointment_date và appointment_time
+    #     appt_date = getattr(self, "appointment_date", None)
+    #     appt_time = getattr(self, "appointment_time", None)
+    #     # validate_appointment_time_for_date sẽ raise ValueError với msg tiếng Việt khi không hợp lệ
+    #     validate_appointment_time_for_date(appt_time, appt_date)
+    #     return self
+
+    
 
 class AppointmentCreate(AppointmentBase):
     """Schema tạo Appointment mới"""
@@ -34,10 +65,24 @@ class AppointmentCreate(AppointmentBase):
 
 class AppointmentUpdate(BaseSchema):
     """Schema cập nhật Appointment"""
+    doctor_id: Optional[UUID] = None
     appointment_date: Optional[date] = None
-    time_slot: Optional[str] = None
+    appointment_time: Optional[time] = None
+    time_slot: Optional[str] = Field(max_length=20, default=None)
     status: Optional[AppointmentStatusEnum] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(max_length=250, default=None)  
+
+    @field_validator("appointment_date")
+    @classmethod
+    def check_appointment_date(cls, value):
+        """Validate ngày hẹn"""
+        return validate_appointment_date(value)
+
+    @field_validator("appointment_time")
+    @classmethod
+    def check_appointment_time(cls, value):
+        """Validate giờ hẹn"""
+        return validate_appointment_time(value)
 
 class AppointmentResponse(AppointmentBase):
     """Schema trả về thông tin Appointment"""
