@@ -8,6 +8,7 @@ from app.patients.models import GenderEnum
 # Import validators
 from app.users.validators import (
     validate_phone_number,
+    validate_valid_dob
 )
 
 class BaseSchema(BaseModel):
@@ -40,7 +41,10 @@ class PatientBase(BaseSchema):
 
 class PatientCreate(PatientBase):
     """Schema tạo Patient mới"""
-    pass                                    # Sử dụng hết các trường từ base
+    @field_validator("dob")
+    @classmethod
+    def _check_dob(cls, v):
+        return validate_valid_dob(v)
 
 class PatientUpdate(BaseSchema):
     """Schema cập nhật Patient - tất cả trường optional"""
@@ -60,10 +64,26 @@ class PatientUpdate(BaseSchema):
     @classmethod
     def _check_phone(cls, v):
         return validate_phone_number(v)
+    
+    @field_validator("dob")
+    @classmethod
+    def _check_dob(cls, v):
+        return validate_valid_dob(v)
 
-class PatientResponse(PatientBase):
+class PatientResponse(BaseSchema):
     """Schema trả về thông tin Patient"""
     id: UUID
+    full_name: str                          # Họ tên (bắt buộc)
+    dob: Optional[date] = None              # Ngày sinh
+    gender: Optional[GenderEnum] = None     # Giới tính
+    phone_number: str                       # Số điện thoại (bắt buộc)
+    email: Optional[EmailStr] = None        # Email (không bắt buộc)
+    address: Optional[str]                  # Địa chỉ
+    medical_history: Optional[str]          # Tiền sử bệnh lý
+    allergies: Optional[str]                # Dị ứng
+    current_medications: Optional[str]      # Thuốc đang dùng
+    current_condition: Optional[str]        # Tình trạng hiện tại
+    notes: Optional[str] = None
     created_at: datetime
     deleted_at: Optional[datetime] = None
 

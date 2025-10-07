@@ -19,11 +19,23 @@ def validate_dob_at_least_18(value: Any) -> Any:
     if not isinstance(value, (date,)):
         raise ValueError("Ngày sinh không hợp lệ")
     today = date.today()
+    if value > today:
+        raise ValueError("Ngày sinh không hợp lệ")
     # tính tuổi chính xác
     age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
     if age < 18:
         raise ValueError("Người dùng phải từ 18 tuổi trở lên")
     return value
+
+def validate_valid_dob(value: Any) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, (date,)):
+        raise ValueError("Ngày sinh không hợp lệ")
+    today = date.today()
+    if value > today:
+        raise ValueError("Ngày sinh không hợp lệ")
+
 
 
 def validate_phone_number(value: Any) -> str:
