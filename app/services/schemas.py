@@ -18,7 +18,7 @@ class BaseSchema(BaseModel):
 
 class ServiceBase(BaseSchema):
     """Schema cơ bản cho Service"""
-    name: str = Field(max_length=250)                               # Tên dịch vụ (bắt buộc)
+    name: str = Field(min_length=2, max_length=250)                               # Tên dịch vụ (bắt buộc)
     price: float                            # Giá dịch vụ (bắt buộc)
     description: Optional[str] = Field(max_length=250, default=None)       # Mô tả    
 
@@ -33,7 +33,7 @@ class ServiceCreate(ServiceBase):
 
 class ServiceUpdate(BaseSchema):
     """Schema cập nhật Service"""
-    name: Optional[str] = Field(max_length=250, default=None)
+    name: Optional[str] = Field(min_length=2, max_length=250, default=None)
     price: Optional[float] = None
     description: Optional[str] = Field(max_length=250, default=None)
 

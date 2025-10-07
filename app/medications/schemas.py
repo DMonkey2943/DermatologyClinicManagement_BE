@@ -19,8 +19,8 @@ class BaseSchema(BaseModel):
 
 class MedicationBase(BaseSchema):
     """Schema cơ bản cho Medication"""
-    name: str = Field(max_length=250)                               # Tên thuốc (bắt buộc)
-    dosage_form: str = Field(max_length=50)                        # Dạng thuốc (bắt buộc)
+    name: str = Field(min_length=2, max_length=250)                               # Tên thuốc (bắt buộc)
+    dosage_form: str = Field(min_length=2, max_length=50)                        # Dạng thuốc (bắt buộc)
     price: float                            # Giá (bắt buộc)
     stock_quantity: int                     # Số lượng tồn kho (bắt buộc)
     description: Optional[str] = Field(max_length=250, default=None)       # Mô tả
@@ -42,8 +42,8 @@ class MedicationCreate(MedicationBase):
 
 class MedicationUpdate(BaseSchema):
     """Schema cập nhật Medication"""
-    name: Optional[str] = Field(max_length=250, default=None)
-    dosage_form: Optional[str] = Field(max_length=50, default=None)
+    name: Optional[str] = Field(min_length=2, max_length=250, default=None)
+    dosage_form: Optional[str] = Field(min_length=2, max_length=50, default=None)
     price: Optional[float] = None
     stock_quantity: Optional[int] = None
     description: Optional[str] = Field(max_length=250, default=None)
@@ -52,6 +52,11 @@ class MedicationUpdate(BaseSchema):
     @classmethod
     def _check_price(cls, v):
         return validate_price(v)
+
+    @field_validator("stock_quantity")
+    @classmethod
+    def _check_stock_quantity(cls, v):
+        return validate_stock_quantity(v)
 
 class MedicationResponse(MedicationBase):
     """Schema trả về thông tin Medication"""
