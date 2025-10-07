@@ -78,12 +78,21 @@ class UserUpdate(BaseSchema):
         return validate_phone_number(v)
 
 
-class UserResponse(UserBase):
+class UserResponse(BaseSchema):
     """Schema để trả về thông tin User - ẩn password"""
     id: UUID                                # ID của user
+    username: str                           # Tên đăng nhập (required)    
+    full_name: Optional[str]                # Họ tên (không bắt buộc)
+    dob: Optional[date] = None              # Ngày sinh (không bắt buộc)
+    gender: Optional[GenderEnum] = None     # Giới tính (không bắt buộc)
+    phone_number: str                       # Số điện thoại (bắt buộc)
+    email: EmailStr                         # Email với validation tự động
+    role: Optional[UserRoleEnum] = None     # Vai trò (không bắt buộc)
+    avatar: Optional[str] = None
     is_active: bool                         # Trạng thái hoạt động
     created_at: datetime                    # Thời gian tạo
     deleted_at: Optional[datetime] = None   # Thời gian xóa (soft delete)
+
 
 class UserLogin(BaseSchema):
     username: str = Field(min_length=4, max_length=50, pattern='^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$')  
@@ -94,13 +103,22 @@ class UserLogin(BaseSchema):
     # def _check_password(cls, v):
     #     return validate_password(v)
 
+class RefreshTokenData(BaseSchema):
+    refresh_token: str
+
 class UserTokenData(BaseSchema):
     """Schema cho dữ liệu trong token"""
     id: UUID
     username: str
     full_name: Optional[str] = None
     email: EmailStr
+    phone_number: str
     role: UserRoleEnum
+
+class LoginResponseData(BaseSchema):
+    user: UserTokenData
+    access_token: str
+    refresh_token: str
 
 class UserForeignKeyResponse(BaseSchema):
     """Schema trả về thông tin User trong các quan hệ Foreign Key"""

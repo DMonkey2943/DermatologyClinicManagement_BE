@@ -84,9 +84,16 @@ class AppointmentUpdate(BaseSchema):
         """Validate giờ hẹn"""
         return validate_appointment_time(value)
 
-class AppointmentResponse(AppointmentBase):
+class AppointmentResponse(BaseSchema):
     """Schema trả về thông tin Appointment"""
     id: UUID
+    patient_id: UUID                        # ID bệnh nhân (bắt buộc)
+    doctor_id: UUID                         # ID bác sĩ (bắt buộc)
+    appointment_date: date                  # Ngày hẹn (bắt buộc)
+    appointment_time: time                  # Giờ hẹn (bắt buộc)
+    time_slot: str                          # Khung giờ (bắt buộc)
+    status: AppointmentStatusEnum           # Trạng thái (bắt buộc)
+    notes: Optional[str]
     created_at: datetime
     created_by: UUID
     patient: Optional[PatientForeignKeyResponse] = None    # Thông tin bệnh nhân
