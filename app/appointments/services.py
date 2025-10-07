@@ -148,6 +148,7 @@ class AppointmentService:
                 doctor_id=appointment.doctor_id,
                 created_by=appointment.created_by,
                 appointment_date=appointment.appointment_date,
+                appointment_time=appointment.appointment_time,
                 time_slot=appointment.time_slot,
                 status=appointment.status,
                 notes=appointment.notes,
