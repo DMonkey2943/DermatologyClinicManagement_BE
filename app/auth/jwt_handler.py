@@ -46,6 +46,13 @@ def create_refresh_token(data_model: BaseModel) -> str:
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+class TokenExpiredError(Exception):
+    """Exception cho token hết hạn."""
+    pass
+
+class TokenInvalidError(Exception):
+    """Exception cho token không hợp lệ."""
+    pass
 
 def verify_token(token: str) -> dict:
     """"Xác thực và giải mã JWT token
@@ -56,9 +63,9 @@ def verify_token(token: str) -> dict:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) # Giải mã token
         return payload
     except jwt.ExpiredSignatureError:
-        raise Exception("Token expired") # Token hết hạn
+        raise TokenExpiredError("Token expired") # Token hết hạn
     except jwt.PyJWTError:
-        raise Exception("Token invalid") # Token không hợp lệ
+        raise TokenInvalidError("Token invalid") # Token không hợp lệ
 
 def get_user_id_from_token(token: str) -> int:
     """Lấy user_id từ JWT token

@@ -7,6 +7,7 @@ import bcrypt
 from app.users.models import User, Doctor
 from app.users.schemas import UserCreate, UserUpdate, UserTokenData, UserResponse, DoctorCombinedCreate, DoctorCombinedUpdate, DoctorResponse
 from fastapi import HTTPException
+from app.core.response import ErrorResponse
 
 class UserService:
     """Service class để xử lý logic liên quan đến User"""
@@ -34,10 +35,10 @@ class UserService:
         user = self.get_user_by_username(user_in.get("username", ""))
         if not user:
             # return None
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=401, detail="Username không tồn tại")
 
         if not self.verify_password(user_in.get("password", ""), user.password):
-            return None
+            raise HTTPException(status_code=401, detail="Username hoặc mật khẩu chưa chính xác")
             
         return UserTokenData.model_validate(user)
 

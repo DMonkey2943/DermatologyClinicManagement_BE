@@ -6,9 +6,12 @@ from fastapi import HTTPException, status
 from starlette.concurrency import run_in_threadpool   # FastAPI sẵn có
 from sqlalchemy.orm import Session, joinedload, class_mapper
 import jwt
-from app.auth.jwt_handler import verify_token
+from app.auth.jwt_handler import verify_token, TokenExpiredError, TokenInvalidError
+
 from app.users.models import UserRoleEnum, User
 from sqlalchemy import and_
+
+
  
 def to_dict(obj):   # Chuyển SQLAlchemy model thành dict
     return {c.key: getattr(obj, c.key) for c in class_mapper(obj.__class__).columns}
@@ -26,7 +29,22 @@ def protected_route(roles: List[UserRoleEnum]) -> Callable[[Callable[..., Any]],
                 token = (kwargs.get("CREDENTIALS") or "").credentials
                 db: Session = kwargs.get("DB")
 
-                payload = verify_token(token)
+                # Bắt exception từ verify_token
+                try:
+                    payload = verify_token(token)
+                except TokenExpiredError:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token expired",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+                except TokenInvalidError:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token invalid",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+                
                 current_user = db.query(User)\
                                   .filter(and_(User.id == payload.get("id"), User.deleted_at.is_(None)))\
                                   .first()  # Lấy user từ DB
