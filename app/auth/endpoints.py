@@ -6,7 +6,7 @@ from app.users.schemas import UserLogin, UserResponse
 from app.users.services import UserService
 from app.auth.jwt_handler import create_access_token, create_refresh_token, verify_token, get_user_id_from_token
 from app.core.response import ResponseBase
-from app.users.schemas import UserTokenData
+from app.users.schemas import UserTokenData, LoginResponseData, RefreshTokenData
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -22,24 +22,27 @@ router = APIRouter(
 #     description="Enter JWT token"
 # )
 
-@router.post("/login")
+@router.post("/login", response_model=ResponseBase[LoginResponseData])
 def login(user: UserLogin, db: Session = Depends(get_db)):
     user_data    = user.model_dump() # Chuyển Pydantic model thành dict
     repo = UserService(db)  # Tạo repository instance    
     validated_user    = repo.validate_login(user_data)
 
-    if validated_user is None:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    # if validated_user is None:
+    #     raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    access_token    = create_access_token(validated_user)
-    refresh_token   = create_refresh_token(validated_user)
+    if validated_user:
+        access_token    = create_access_token(validated_user)
+        refresh_token   = create_refresh_token(validated_user)
 
-    return {"user": validated_user, "access_token": access_token, "refresh_token": refresh_token}
+        data_login = {"user": validated_user, "access_token": access_token, "refresh_token": refresh_token}
+        return ResponseBase(message="Login successfully", data=data_login)
+
 
 @router.post("/refresh")
-def refresh_token(refresh_token: str):
+def refresh_token(data: RefreshTokenData):
     try:
-        payload = verify_token(refresh_token)
+        payload = verify_token(data.refresh_token)
     except Exception as e:
         raise HTTPException(status_code=403, detail="Invalid refresh token")
     
