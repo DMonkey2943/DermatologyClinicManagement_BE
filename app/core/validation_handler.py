@@ -14,6 +14,7 @@ FIELD_LABELS: Dict[str, str] = {
     "role": "Vai trò",
     "name": "Tên",
     "price": "Giá",
+    "dosage_form": "Dạng thuốc",
     "stock_quantity": "Số lượng tồn kho",
     "appointment_date": "Ngày hẹn khám",
     "appointment_time": "Giờ hẹn khám",

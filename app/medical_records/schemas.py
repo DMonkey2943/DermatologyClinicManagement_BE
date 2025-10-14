@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
@@ -23,10 +23,10 @@ class MedicalRecordBase(BaseSchema):
     """Schema cơ bản cho Medical Record"""
     patient_id: UUID                        # ID bệnh nhân
     doctor_id: UUID                         # ID bác sĩ
-    symptoms: Optional[str] = None          # Triệu chứng
-    diagnosis: Optional[str] = None         # Chẩn đoán
+    symptoms: Optional[str] = Field(max_length=250, default=None)          # Triệu chứng
+    diagnosis: Optional[str] = Field(max_length=250, default=None)         # Chẩn đoán
     status: MedicalRecordStatusEnum         # Trạng thái
-    notes: Optional[str] = None             # Ghi chú
+    notes: Optional[str] = Field(max_length=250, default=None)             # Ghi chú
     appointment_id: Optional[UUID] = None   # ID lịch hẹn (nếu có)
 
 class MedicalRecordCreate(MedicalRecordBase):
@@ -35,10 +35,10 @@ class MedicalRecordCreate(MedicalRecordBase):
 
 class MedicalRecordUpdate(BaseSchema):
     """Schema cập nhật Medical Record"""
-    symptoms: Optional[str] = None
-    diagnosis: Optional[str] = None
+    symptoms: Optional[str] = Field(max_length=250, default=None)
+    diagnosis: Optional[str] = Field(max_length=250, default=None)
     status: Optional[MedicalRecordStatusEnum] = None
-    notes: Optional[str] = None
+    notes: Optional[str] = Field(max_length=250, default=None)
 
 class MedicalRecordResponse(MedicalRecordBase):
     """Schema trả về thông tin Medical Record"""

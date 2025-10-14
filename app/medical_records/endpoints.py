@@ -54,6 +54,8 @@ def read_medical_record(
 @router.get("/", response_model=PaginatedResponse[MedicalRecordResponse])
 def read_medical_records(
     CREDENTIALS: AuthCredentialDepend,
+    patient_id: Optional[UUID] = Query(None, description="ID bệnh nhân để lọc"),
+    doctor_id: Optional[UUID] = Query(None, description="ID bác sĩ (user_id) để lọc"),
     skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),
     limit: int = Query(10, ge=1, le=100, description="Số bản ghi lấy về"),
     DB: Session = Depends(get_db),
@@ -64,10 +66,10 @@ def read_medical_records(
     - Bất kỳ ai cũng có thể xem danh sách hồ sơ khám bệnh
     """
     repo = MedicalRecordService(DB)
-    total = repo.count_medical_records()    
+    total = repo.count_medical_records(patient_id=patient_id, doctor_id=doctor_id)    
     page = (skip // limit) + 1
     total_pages = (total // limit) + (1 if total % limit else 0)
-    records = repo.get_medical_records(skip=skip, limit=limit)
+    records = repo.get_medical_records(skip=skip, limit=limit, patient_id=patient_id, doctor_id=doctor_id)
     meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)
     return PaginatedResponse(message="Lấy danh sách hồ sơ khám bệnh thành công", data=records, meta=meta)
 

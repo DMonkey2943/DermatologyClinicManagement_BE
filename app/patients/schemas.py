@@ -65,10 +65,10 @@ class PatientUpdate(BaseSchema):
     def _check_phone(cls, v):
         return validate_phone_number(v)
     
-    @field_validator("dob")
-    @classmethod
-    def _check_dob(cls, v):
-        return validate_valid_dob(v)
+    # @field_validator("dob")
+    # @classmethod
+    # def _check_dob(cls, v):
+    #     return validate_valid_dob(v)
 
 class PatientResponse(BaseSchema):
     """Schema trả về thông tin Patient"""
