@@ -14,28 +14,37 @@ class PrescriptionService:
         self.medication_service = MedicationService(db)
     
     def create_prescription(self, prescription_in: PrescriptionCreate) -> Prescription:
-        """Tạo một Prescription mới"""
-        db_prescription = Prescription(**prescription_in.model_dump(exclude={'prescription_details'}))
-        self.db.add(db_prescription)
-        self.db.commit()
-        self.db.refresh(db_prescription)
+        """Tạo một Prescription mới với transaction built-in"""
+        try:
+            db_prescription = Prescription(**prescription_in.model_dump(exclude={'prescription_details'}))
+            self.db.add(db_prescription)
+            self.db.flush()
+            self.db.refresh(db_prescription)
 
-        if prescription_in.prescription_details:
-            for detail_in in prescription_in.prescription_details:
-                medication = self.medication_service.get_medication_by_id(detail_in.medication_id)
-                if not medication:
-                    raise HTTPException(status_code=404, detail=f"Medication with id {detail_in.medication_id} not found")
-                detail_create = PrescriptionDetailCreate(
-                    prescription_id=db_prescription.id,
-                    medication_id=detail_in.medication_id,
-                    name=medication.name,
-                    dosage_form=medication.dosage_form,
-                    quantity=detail_in.quantity,
-                    dosage=detail_in.dosage
-                )
-                self.create_prescription_detail(detail_create)
+            if prescription_in.prescription_details:
+                for detail_in in prescription_in.prescription_details:
+                    medication = self.medication_service.get_medication_by_id(detail_in.medication_id)
+                    if not medication:
+                        # Sẽ trigger rollback tự động khi exception
+                        raise HTTPException(status_code=404, detail=f"Medication with id {detail_in.medication_id} not found")
+                    detail_create = PrescriptionDetailCreate(
+                        prescription_id=db_prescription.id,
+                        medication_id=detail_in.medication_id,
+                        name=medication.name,
+                        dosage_form=medication.dosage_form,
+                        quantity=detail_in.quantity,
+                        dosage=detail_in.dosage
+                    )
+                    db_prescription_detail = PrescriptionDetail(**detail_create.model_dump())
+                    self.db.add(db_prescription_detail)
+                    self.db.flush()
+            
+            self.db.commit()  # Commit tất cả
+            return self.get_prescription_by_id(db_prescription.id)
+        except Exception as e:
+            self.db.rollback()  # Rollback tự động khi có exception
+            raise HTTPException(status_code=400, detail=f"Failed to create prescription: {str(e)}")
 
-        return self.get_prescription_by_id(db_prescription.id)
     
     # Lấy Prescription theo ID
     def get_prescription_by_id(self, prescription_id: UUID) -> Optional[Prescription]:

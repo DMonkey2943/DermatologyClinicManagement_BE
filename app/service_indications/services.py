@@ -13,26 +13,35 @@ class ServiceIndicationService:
         self.service_service = ServiceService(db)
     
     def create_service_indication(self, service_indication_in: ServiceIndicationCreate) -> ServiceIndication:
-        """Tạo một ServiceIndication mới"""
-        db_service_indication = ServiceIndication(**service_indication_in.model_dump(exclude={'service_indication_details'}))
-        self.db.add(db_service_indication)
-        self.db.commit()
-        self.db.refresh(db_service_indication)
+        """Tạo một ServiceIndication mới  với transaction built-in"""
+        try: 
+            db_service_indication = ServiceIndication(**service_indication_in.model_dump(exclude={'service_indication_details'}))
+            self.db.add(db_service_indication)
+            self.db.flush()
+            self.db.refresh(db_service_indication)
 
-        if service_indication_in.service_indication_details:
-            for detail_in in service_indication_in.service_indication_details:
-                service = self.service_service.get_service_by_id(detail_in.service_id)
-                if not service:
-                    raise HTTPException(status_code=404, detail=f"Service with id {detail_in.service_id} not found")
-                detail_create = ServiceIndicationDetailCreate(
-                    service_indication_id=db_service_indication.id,
-                    service_id=detail_in.service_id,
-                    name=service.name,
-                    quantity=detail_in.quantity
-                )
-                self.create_service_indication_detail(detail_create)
-
-        return self.get_service_indication_by_id(db_service_indication.id)
+            if service_indication_in.service_indication_details:
+                for detail_in in service_indication_in.service_indication_details:
+                    service = self.service_service.get_service_by_id(detail_in.service_id)
+                    if not service:
+                        # Sẽ trigger rollback tự động khi exception
+                        raise HTTPException(status_code=404, detail=f"Service with id {detail_in.service_id} not found")
+                    detail_create = ServiceIndicationDetailCreate(
+                        service_indication_id=db_service_indication.id,
+                        service_id=detail_in.service_id,
+                        name=service.name,
+                        quantity=detail_in.quantity
+                    )
+                    # self.create_service_indication_detail(detail_create)
+                    db_service_indication_detail = ServiceIndicationDetail(**detail_create.model_dump())
+                    self.db.add(db_service_indication_detail)
+                    self.db.flush()
+                    
+            self.db.commit() # Commit tất cả
+            return self.get_service_indication_by_id(db_service_indication.id)
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(status_code=400, detail=f"Failed to create service indication: {str(e)}")
     
     # Lấy ServiceIndication theo ID
     def get_service_indication_by_id(self, service_indication_id: UUID) -> Optional[ServiceIndication]:
