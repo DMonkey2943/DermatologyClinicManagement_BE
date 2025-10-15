@@ -1,5 +1,5 @@
 from pydantic import BaseModel, validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 import enum
@@ -20,9 +20,14 @@ class ServiceIndicationBase(BaseSchema):
     medical_record_id: UUID                 # ID lịch sử khám bệnh
     notes: Optional[str] = None             # Ghi chú
 
+class ServiceIndicationDetailInput(BaseSchema):
+    """Schema input cho ServiceIndication Detail khi tạo"""
+    service_id: UUID                        # ID thuốc
+    quantity: int                           # Số lượng thuốc
+
 class ServiceIndicationCreate(ServiceIndicationBase):
     """Schema tạo ServiceIndication mới"""
-    pass
+    service_indication_details: Optional[List[ServiceIndicationDetailInput]] = None
 
 class ServiceIndicationUpdate(BaseSchema):
     """Schema cập nhật ServiceIndication"""
@@ -40,9 +45,8 @@ class ServiceIndicationDetailBase(BaseSchema):
     """Schema cơ bản cho ServiceIndication Detail"""
     service_indication_id: UUID             # ID phiếu chỉ định dịch vụ
     service_id: UUID                        # ID dịch vụ
-    quantity: int                           # Số lượng thuốc
-    dosage: Optional[str] = None            # Liều lượng (VD: "1 viên x 2 lần/ngày")
-    unit_price: float                       # Giá đơn vị
+    name: str                               # Tên dịch vụ
+    quantity: int                           # Số lượng
 
     @validator('quantity')
     def validate_quantity(cls, v):
@@ -59,12 +63,18 @@ class ServiceIndicationDetailUpdate(BaseSchema):
     """Schema cập nhật ServiceIndication Detail"""
     service_indication_id: Optional[UUID] = None   
     service_id: Optional[UUID] = None        
-    quantity: Optional[int] = None             
-    dosage: Optional[str] = None                
-    unit_price: Optional[float] = None          
+    name: Optional[str] = None             
+    quantity: Optional[int] = None   
 
 class ServiceIndicationDetailResponse(ServiceIndicationDetailBase):
     """Schema trả về thông tin ServiceIndication Detail"""
     id: UUID
-    medication: Optional[ServiceResponse] = None
+    # service: Optional[ServiceResponse] = None
+
+class ServiceIndicationFullResponse(ServiceIndicationBase):
+    """Schema trả về thông tin ServiceIndication"""
+    id: UUID
+    created_at: datetime
+    services: Optional[List[ServiceIndicationDetailResponse]] = None
+
     

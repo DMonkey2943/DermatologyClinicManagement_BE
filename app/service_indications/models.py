@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Text, ForeignKey, Integer
+from sqlalchemy import Column, DateTime, Text, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -38,6 +38,7 @@ class ServiceIndicationDetail(Base):
     service_id = Column(UUID(as_uuid=True), ForeignKey("services.id"), nullable=False)
     
     # Thông tin chi tiết
+    name = Column(String)
     quantity = Column(Integer)              # Số lượng
 
     # Relationships
