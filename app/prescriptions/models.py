@@ -38,9 +38,12 @@ class PrescriptionDetail(Base):
     medication_id = Column(UUID(as_uuid=True), ForeignKey("medications.id"), nullable=False)
     
     # Thông tin chi tiết
+    name = Column(String)
+    dosage_form = Column(String)
     quantity = Column(Integer)                                     # Số lượng thuốc
     dosage = Column(String)                                        # Liều lượng (VD: "1 viên x 2 lần/ngày")
-    unit_price = Column(Double)                                    # Giá đơn vị
+    # unit_price = Column(Double)                                    # Giá đơn vị
+
 
     # Relationships
     prescription = relationship("Prescription", back_populates="prescription_details")

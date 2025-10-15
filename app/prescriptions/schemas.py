@@ -1,5 +1,5 @@
-from pydantic import BaseModel, validator
-from typing import Optional
+from pydantic import BaseModel, validator, Field
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 import enum
@@ -20,9 +20,15 @@ class PrescriptionBase(BaseSchema):
     medical_record_id: UUID                 # ID lịch sử khám bệnh
     notes: Optional[str] = None             # Ghi chú
 
+class PrescriptionDetailInput(BaseModel):
+    """Schema input cho Prescription Detail khi tạo"""
+    medication_id: UUID                     # ID thuốc
+    quantity: int                           # Số lượng thuốc
+    dosage: Optional[str] = None            # Liều lượng (VD: "1 viên x 2 lần/ngày")
+
 class PrescriptionCreate(PrescriptionBase):
     """Schema tạo Prescription mới"""
-    pass
+    prescription_details: Optional[List[PrescriptionDetailInput]] = None
 
 class PrescriptionUpdate(BaseSchema):
     """Schema cập nhật Prescription"""
@@ -40,9 +46,11 @@ class PrescriptionDetailBase(BaseSchema):
     """Schema cơ bản cho Prescription Detail"""
     prescription_id: UUID                   # ID toa thuốc
     medication_id: UUID                     # ID thuốc
+    name: str                               # Tên thuốc
+    dosage_form: str                        # Dạng thuốc
     quantity: int                           # Số lượng thuốc
     dosage: Optional[str] = None            # Liều lượng (VD: "1 viên x 2 lần/ngày")
-    unit_price: float                       # Giá đơn vị
+    # unit_price: float                       # Giá đơn vị
 
     @validator('quantity')
     def validate_quantity(cls, v):
@@ -53,18 +61,31 @@ class PrescriptionDetailBase(BaseSchema):
 
 class PrescriptionDetailCreate(PrescriptionDetailBase):
     """Schema tạo Prescription Detail mới"""
-    pass
+    prescription_id: UUID                   # ID toa thuốc
+    medication_id: UUID                     # ID thuốc
+    quantity: int                           # Số lượng thuốc
+    dosage: Optional[str] = None            # Liều lượng (VD: "1 viên x 2 lần/ngày")
+
 
 class PrescriptionDetailUpdate(BaseSchema):
     """Schema cập nhật Prescription Detail"""
     prescription_id: Optional[UUID] = None   
     medication_id: Optional[UUID] = None        
+    name: Optional[str] = None        
+    dosage_form: Optional[str] = None        
     quantity: Optional[int] = None             
     dosage: Optional[str] = None                
-    unit_price: Optional[float] = None          
+    # unit_price: Optional[float] = None          
 
 class PrescriptionDetailResponse(PrescriptionDetailBase):
     """Schema trả về thông tin Prescription Detail"""
     id: UUID
-    medication: Optional[MedicationResponse] = None
+    # medication: Optional[MedicationResponse] = None
     
+
+
+class PrescriptionFullResponse(PrescriptionBase):
+    """Schema trả về thông tin Prescription"""
+    id: UUID
+    created_at: datetime
+    medications: Optional[List[PrescriptionDetailResponse]] = None
