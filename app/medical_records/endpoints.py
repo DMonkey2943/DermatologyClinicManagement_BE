@@ -6,6 +6,10 @@ from datetime import date
 from app.core.dependencies import AuthCredentialDepend
 from app.database import get_db
 from app.core.authentication import protected_route
+from app.prescriptions.schemas import PrescriptionFullResponse
+from app.prescriptions.services import PrescriptionService
+from app.service_indications.schemas import ServiceIndicationFullResponse
+from app.service_indications.services import ServiceIndicationService
 from app.users.models import UserRoleEnum as RoleEnum
 from app.core.response import PaginationMeta, ResponseBase, PaginatedResponse
 from app.medical_records.schemas import MedicalRecordCreate, MedicalRecordUpdate, MedicalRecordResponse
@@ -33,6 +37,40 @@ def create_medical_record(
     repo = MedicalRecordService(DB)
     db_record = repo.create_medical_record(record)
     return ResponseBase(message="Hồ sơ khám bệnh được tạo thành công", data=db_record)
+
+@router.get("/{record_id}/prescription", response_model=ResponseBase[PrescriptionFullResponse])
+def read_prescription_by_medical_record_id(
+    CREDENTIALS: AuthCredentialDepend,
+    record_id: UUID,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Lấy thông tin đơn thuốc theo medical record ID
+    - Bất kỳ ai cũng có thể xem thông tin đơn thuốc
+    """
+    repo = PrescriptionService(DB)
+    db_record = repo.get_prescription_by_medical_record_id(record_id)
+    if db_record is None:
+        return ResponseBase(message="Phiên khám này không có Đơn thuốc", data=None) #Trả về data rỗng khi không có Đơn thuốc
+    return ResponseBase(message="Lấy thông tin Đơn thuốc thành công", data=db_record)
+
+@router.get("/{record_id}/service-indication", response_model=ResponseBase[Optional[ServiceIndicationFullResponse]])
+def read_service_indication_by_medical_record_id(
+    CREDENTIALS: AuthCredentialDepend,
+    record_id: UUID,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Lấy thông tin Phiếu chỉ định dịch vụ theo medical record ID
+    - Bất kỳ ai cũng có thể xem thông tin Phiếu chỉ định dịch vụ
+    """
+    repo = ServiceIndicationService(DB)
+    db_record = repo.get_service_indication_by_medical_record_id(record_id)
+    if db_record is None:
+        return ResponseBase(message="Phiên khám này không có Phiếu chỉ định dịch vụ", data=None) #Trả về data rỗng khi không có phiếu chỉ định dv
+    return ResponseBase(message="Lấy thông tin Phiếu chỉ định dịch vụ thành công", data=db_record)
 
 @router.get("/{record_id}", response_model=ResponseBase[MedicalRecordResponse])
 def read_medical_record(

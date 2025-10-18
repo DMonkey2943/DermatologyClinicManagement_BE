@@ -60,6 +60,22 @@ class PrescriptionService:
         )
         return full_prescription
     
+    # Lấy Prescription theo medical record ID
+    def get_prescription_by_medical_record_id(self, medical_record_id: UUID) -> Optional[Prescription]:
+        """Lấy Prescription theo ID"""
+        prescription = self.db.query(Prescription).filter(Prescription.medical_record_id == medical_record_id).first()
+        if not prescription:
+            return None
+        prescription_details = self.get_prescription_details(prescription_id=prescription.id)
+        full_prescription = PrescriptionFullResponse(
+            id = prescription.id,
+            medical_record_id = prescription.medical_record_id,
+            notes = prescription.notes,
+            created_at = prescription.created_at,
+            medications = prescription_details,
+        )
+        return full_prescription
+    
     # Lấy danh sách Prescription với phân trang
     def get_prescriptions(self, skip: int = 0, limit: int = 10) -> List[Prescription]:
         """Lấy danh sách Prescription với phân trang"""

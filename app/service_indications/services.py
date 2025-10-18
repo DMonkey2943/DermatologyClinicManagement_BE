@@ -57,6 +57,22 @@ class ServiceIndicationService:
         )
         return full_service_indication
     
+    # Lấy ServiceIndication theo medical record ID
+    def get_service_indication_by_medical_record_id(self, medical_record_id: UUID) -> Optional[ServiceIndication]:
+        """Lấy ServiceIndication theo ID"""
+        service_indication = self.db.query(ServiceIndication).filter(ServiceIndication.medical_record_id == medical_record_id).first()
+        if not service_indication:
+            return None
+        service_indication_details = self.get_service_indication_details(service_indication_id=service_indication.id)
+        full_service_indication = ServiceIndicationFullResponse(
+            id = service_indication.id,
+            medical_record_id = service_indication.medical_record_id,
+            notes = service_indication.notes,
+            created_at = service_indication.created_at,
+            services = service_indication_details,
+        )
+        return full_service_indication
+    
     # Lấy danh sách ServiceIndication với phân trang
     def get_service_indications(self, skip: int = 0, limit: int = 10) -> List[ServiceIndication]:
         """Lấy danh sách ServiceIndication với phân trang"""
