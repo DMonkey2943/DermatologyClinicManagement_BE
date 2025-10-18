@@ -85,6 +85,7 @@ class AppointmentService:
             doctor_id=db_appointment.doctor_id,
             created_by=db_appointment.created_by,
             appointment_date=db_appointment.appointment_date,
+            appointment_time=db_appointment.appointment_time,
             time_slot=db_appointment.time_slot,
             status=db_appointment.status,
             notes=db_appointment.notes,
@@ -110,8 +111,8 @@ class AppointmentService:
             doctor = self.user_service.get_user_by_id(doctor_id)
             if not doctor:
                 raise HTTPException(status_code=404, detail="Bác sĩ không tồn tại")
-            if doctor.role != "DOCTOR":
-                raise HTTPException(status_code=400, detail="User không phải là bác sĩ")
+            # if doctor.role != "DOCTOR":
+            #     raise HTTPException(status_code=400, detail="User không phải là bác sĩ")
             query = query.filter(Appointment.doctor_id == doctor_id)
 
         # Lọc theo ngày
