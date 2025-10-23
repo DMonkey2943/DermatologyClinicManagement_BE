@@ -63,7 +63,7 @@ class PrescriptionService:
         return full_prescription
     
     # Lấy Prescription theo medical record ID
-    def get_prescription_by_medical_record_id(self, medical_record_id: UUID) -> Optional[Prescription]:
+    def get_prescription_by_medical_record_id(self, medical_record_id: UUID) -> Optional[PrescriptionFullResponse]:
         """Lấy Prescription theo ID"""
         prescription = self.db.query(Prescription).filter(Prescription.medical_record_id == medical_record_id).first()
         if not prescription:

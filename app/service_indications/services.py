@@ -60,7 +60,7 @@ class ServiceIndicationService:
         return full_service_indication
     
     # Lấy ServiceIndication theo medical record ID
-    def get_service_indication_by_medical_record_id(self, medical_record_id: UUID) -> Optional[ServiceIndication]:
+    def get_service_indication_by_medical_record_id(self, medical_record_id: UUID) -> Optional[ServiceIndicationFullResponse]:
         """Lấy ServiceIndication theo ID"""
         service_indication = self.db.query(ServiceIndication).filter(ServiceIndication.medical_record_id == medical_record_id).first()
         if not service_indication:

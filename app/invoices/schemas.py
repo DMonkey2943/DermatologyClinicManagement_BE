@@ -5,7 +5,9 @@ from uuid import UUID
 
 # Import các response từ schemas khác
 from app.patients.schemas import PatientResponse
-from app.users.schemas import UserResponse
+from app.prescriptions.schemas import PrescriptionDetailResponse
+from app.service_indications.schemas import ServiceIndicationDetailResponse
+from app.users.schemas import UserForeignKeyResponse, UserResponse
 from app.services.schemas import ServiceResponse
 from app.medications.schemas import MedicationResponse
 
@@ -60,10 +62,15 @@ class InvoiceResponse(InvoiceBase):
     id: UUID
     created_at: datetime
     patient: Optional[PatientResponse] = None
-    doctor: Optional[UserResponse] = None
-    created_by: Optional[UserResponse] = None
-    service_invoice_details: Optional[List["ServiceInvoiceDetailResponse"]] = None
-    medication_invoice_details: Optional[List["MedicationInvoiceDetailResponse"]] = None
+    doctor: Optional[UserForeignKeyResponse] = None
+    created_by_user: Optional[UserForeignKeyResponse] = None
+    # service_invoice_details: Optional[List["ServiceInvoiceDetailResponse"]] = None
+    # medication_invoice_details: Optional[List["MedicationInvoiceDetailResponse"]] = None
+
+class InvoiceFullResponse(InvoiceResponse):
+    """Schema trả về thông tin Invoice full"""
+    medications: Optional[List[PrescriptionDetailResponse]] = None
+    services: Optional[List[ServiceIndicationDetailResponse]] = None
 
 
 
