@@ -30,7 +30,9 @@ class ServiceIndicationService:
                         service_indication_id=db_service_indication.id,
                         service_id=detail_in.service_id,
                         name=service.name,
-                        quantity=detail_in.quantity
+                        quantity=detail_in.quantity,
+                        unit_price=service.price,
+                        total_price=service.price*detail_in.quantity,
                     )
                     # self.create_service_indication_detail(detail_create)
                     db_service_indication_detail = ServiceIndicationDetail(**detail_create.model_dump())

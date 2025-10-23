@@ -33,7 +33,9 @@ class PrescriptionService:
                         name=medication.name,
                         dosage_form=medication.dosage_form,
                         quantity=detail_in.quantity,
-                        dosage=detail_in.dosage
+                        dosage=detail_in.dosage,
+                        unit_price=medication.price,
+                        total_price=medication.price*detail_in.quantity,
                     )
                     db_prescription_detail = PrescriptionDetail(**detail_create.model_dump())
                     self.db.add(db_prescription_detail)

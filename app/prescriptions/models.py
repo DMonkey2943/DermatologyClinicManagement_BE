@@ -42,7 +42,8 @@ class PrescriptionDetail(Base):
     dosage_form = Column(String)
     quantity = Column(Integer)                                     # Số lượng thuốc
     dosage = Column(String)                                        # Liều lượng (VD: "1 viên x 2 lần/ngày")
-    # unit_price = Column(Double)                                    # Giá đơn vị
+    unit_price = Column(Double)                                    # Giá đơn vị
+    total_price = Column(Double)                                   # Thành tiền
 
 
     # Relationships

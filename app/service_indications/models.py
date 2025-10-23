@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Text, ForeignKey, Integer, String
+from sqlalchemy import Column, DateTime, Text, ForeignKey, Integer, String, Double
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -40,6 +40,8 @@ class ServiceIndicationDetail(Base):
     # Thông tin chi tiết
     name = Column(String)
     quantity = Column(Integer)              # Số lượng
+    unit_price = Column(Double)                                    # Giá đơn vị
+    total_price = Column(Double)                                   # Thành tiền
 
     # Relationships
     service_indication = relationship("ServiceIndication", back_populates="service_indication_details")

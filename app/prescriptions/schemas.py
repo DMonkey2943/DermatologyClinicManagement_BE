@@ -50,7 +50,8 @@ class PrescriptionDetailBase(BaseSchema):
     dosage_form: str                        # Dạng thuốc
     quantity: int                           # Số lượng thuốc
     dosage: Optional[str] = None            # Liều lượng (VD: "1 viên x 2 lần/ngày")
-    # unit_price: float                       # Giá đơn vị
+    unit_price: float                       # Giá đơn vị
+    total_price: float                      # Thành tiền
 
     @validator('quantity')
     def validate_quantity(cls, v):
@@ -75,7 +76,8 @@ class PrescriptionDetailUpdate(BaseSchema):
     dosage_form: Optional[str] = None        
     quantity: Optional[int] = None             
     dosage: Optional[str] = None                
-    # unit_price: Optional[float] = None          
+    unit_price: Optional[float] = None          
+    total_price: Optional[float] = None          
 
 class PrescriptionDetailResponse(PrescriptionDetailBase):
     """Schema trả về thông tin Prescription Detail"""

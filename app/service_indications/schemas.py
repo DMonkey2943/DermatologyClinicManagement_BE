@@ -47,6 +47,8 @@ class ServiceIndicationDetailBase(BaseSchema):
     service_id: UUID                        # ID dịch vụ
     name: str                               # Tên dịch vụ
     quantity: int                           # Số lượng
+    unit_price: float                       # Giá đơn vị
+    total_price: float                      # Thành tiền
 
     @validator('quantity')
     def validate_quantity(cls, v):
@@ -64,7 +66,9 @@ class ServiceIndicationDetailUpdate(BaseSchema):
     service_indication_id: Optional[UUID] = None   
     service_id: Optional[UUID] = None        
     name: Optional[str] = None             
-    quantity: Optional[int] = None   
+    quantity: Optional[int] = None                
+    unit_price: Optional[float] = None          
+    total_price: Optional[float] = None   
 
 class ServiceIndicationDetailResponse(ServiceIndicationDetailBase):
     """Schema trả về thông tin ServiceIndication Detail"""
