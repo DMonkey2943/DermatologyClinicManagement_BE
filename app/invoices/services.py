@@ -5,12 +5,15 @@ from uuid import UUID
 from typing import List, Optional
 from datetime import datetime
 from fastapi import HTTPException
+from app.appointments.services import AppointmentService
 from app.invoices.models import Invoice
 from app.invoices.schemas import InvoiceCreate, InvoiceFullResponse
 from app.patients.services import PatientService
 from app.prescriptions.services import PrescriptionService
 from app.service_indications.services import ServiceIndicationService
 from app.users.services import UserService
+from app.medications.services import MedicationService
+from app.medical_records.services import MedicalRecordService
 
 class InvoiceService:
     def __init__(self, db: Session):
@@ -19,16 +22,59 @@ class InvoiceService:
         self.patient_service = PatientService(db)
         self.prescription_service = PrescriptionService(db)
         self.service_indication_service = ServiceIndicationService(db)
+        self.medication_service = MedicationService(db)
+        self.medical_record_service = MedicalRecordService(db)
+        self.appointment_service = AppointmentService(db)
     
     def create_invoice(self, invoice_in: InvoiceCreate) -> Invoice:
-        """Tạo một Invoice mới"""
-        db_invoice = Invoice(**invoice_in.model_dump())
-        self.db.add(db_invoice)
-        self.db.commit()
-        self.db.refresh(db_invoice)
+        """Tạo một Invoice mới và cập nhật medical_record thành PAID và trừ stock medications.
+        Toàn bộ thao tác nằm trong một transaction: nếu có lỗi sẽ rollback.
+        """
+        try:
+            db_invoice = Invoice(**invoice_in.model_dump())
+            self.db.add(db_invoice)
+            self.db.flush()  # ensure db_invoice.id available if needed
 
-        return db_invoice
+            # Lấy prescription liên quan tới medical_record để trừ stock
+            prescription = self.prescription_service.get_prescription_by_medical_record_id(invoice_in.medical_record_id)
+            if prescription and getattr(prescription, "medications", None):
+                for detail in prescription.medications:
+                    med = self.medication_service.get_medication_by_id(detail.medication_id)
+                    if not med:
+                        # sẽ trigger rollback
+                        raise HTTPException(status_code=404, detail=f"Thuốc với id {detail.medication_id} không tìm thấy")
+                    # Kiểm tra trường stock_quantity tồn tại và đủ
+                    if getattr(med, "stock_quantity", None) is None:
+                        raise HTTPException(status_code=400, detail=f"Medication stock information unavailable for {med.id}")
+                    if med.stock_quantity < detail.quantity:
+                        raise HTTPException(status_code=400, detail=f"Số lượng tồn kho của thuốc này không đủ {med.id}")
+                    med.stock_quantity = med.stock_quantity - detail.quantity
+                    self.db.add(med)
 
+            # Cập nhật medical_record status = "PAID"
+            medical_record = self.medical_record_service.get_medical_record_by_id(invoice_in.medical_record_id)
+            if not medical_record:
+                raise HTTPException(status_code=404, detail="Phiên khám không tồn tại")
+            medical_record.status = "PAID"
+            self.db.add(medical_record)
+
+            # Cập nhật appointment status = "COMPLETED"
+            appointment = self.appointment_service.get_appointment_by_id(medical_record.appointment_id)
+            if not appointment:
+                raise HTTPException(status_code=404, detail="Lịch hẹn khám không tồn tại")
+            appointment.status = "COMPLETED"
+            self.db.add(appointment)
+
+            # Commit tất cả thay đổi cùng lúc
+            self.db.commit()
+            self.db.refresh(db_invoice)
+            return self.get_invoice_by_id(db_invoice.id)
+        except HTTPException:
+            self.db.rollback()
+            raise
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(status_code=400, detail=f"Lỗi tạo hóa đơn: {str(e)}")
     
     # Lấy Invoice theo ID
     def get_invoice_by_id(self, invoice_id: UUID) -> Optional[Invoice]:
