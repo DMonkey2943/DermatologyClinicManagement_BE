@@ -29,11 +29,21 @@ class PatientService:
             return None
         return db_patient
 
-    def get_patients(self, skip: int = 0, limit: int = 10) -> list[Patient]:
+    def get_patients(self, skip: int = 0, limit: int = 10, q: Optional[str] = None) -> list[Patient]:
         """Lấy danh sách patients với phân trang"""
-        patients = self.db.query(Patient).filter(
+        query = self.db.query(Patient).filter(
             Patient.deleted_at.is_(None)  # Chỉ lấy bệnh nhân chưa bị xóa
-        ).offset(skip).limit(limit).all()
+        )
+        if q:
+            term = f"%{q.strip()}%"
+            query = query.filter(
+                or_(
+                    Patient.full_name.ilike(term),
+                    Patient.phone_number.ilike(term)
+                )
+            )
+
+        patients = query.offset(skip).limit(limit).all()
         return patients
     
     def search_patients(self, search_term: str, skip: int = 0, limit: int = 100) -> List[Patient]:
@@ -57,8 +67,13 @@ class PatientService:
         """
         query = self.db.query(Patient).filter(Patient.deleted_at.is_(None))
         if search_term:
-            search = f"%{search_term}%"
-            query = query.filter(Patient.full_name.ilike(search) | Patient.phone_number.ilike(search))
+            search = f"%{search_term.strip()}%"
+            query = query.filter(
+                or_(
+                    Patient.full_name.ilike(search),
+                    Patient.phone_number.ilike(search)
+                )
+            )
         return query.count()
     
     def update_patient(self, patient_id: UUID, patient_update: PatientUpdate) -> Optional[Patient]:

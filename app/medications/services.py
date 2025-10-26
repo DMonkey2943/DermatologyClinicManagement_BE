@@ -21,16 +21,29 @@ class MedicationService:
         """Lấy Medication theo ID"""
         return self.db.query(Medication).filter(Medication.id == medication_id).first()
     
-    def get_medications(self, skip: int = 0, limit: int = 10) -> List[Medication]:
-        """Lấy danh sách Medication với phân trang"""
-        return self.db.query(Medication).filter(
+    def get_medications(self, skip: int = 0, limit: int = 10, q: Optional[str] = None) -> List[Medication]:
+        """Lấy danh sách Medication với phân trang và hỗ trợ tìm kiếm"""
+        query = self.db.query(Medication).filter(
             Medication.deleted_at.is_(None)
-        ).offset(skip).limit(limit).all()
-    
-    def count_medications(self) -> int:
+        )
+        if q:
+            term = f"%{q.strip()}%"
+            query = query.filter(
+                Medication.name.ilike(term)
+            )
+        medications = query.offset(skip).limit(limit).all()
+        return medications
+
+    def count_medications(self, q: Optional[str] = None) -> int:
         """Đếm tổng số Medication"""
-        return self.db.query(Medication).filter(Medication.deleted_at.is_(None)).count()
-    
+        query = self.db.query(Medication).filter(Medication.deleted_at.is_(None))
+        if q:
+            term = f"%{q.strip()}%"
+            query = query.filter(
+                Medication.name.ilike(term)
+            )
+        return query.count()
+
     def update_medication(self, medication_id: UUID, medication_in: MedicationUpdate) -> Optional[Medication]:
         db_medication = self.get_medication_by_id(medication_id)
         if not db_medication:

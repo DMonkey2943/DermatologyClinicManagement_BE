@@ -21,16 +21,29 @@ class ServiceService:
         """Lấy Service theo ID"""
         return self.db.query(Service).filter(Service.id == service_id).first()
     
-    def get_services(self, skip: int = 0, limit: int = 10) -> List[Service]:
-        """Lấy danh sách Service với phân trang"""
-        return self.db.query(Service).filter(
+    def get_services(self, skip: int = 0, limit: int = 10, q: Optional[str] = None) -> List[Service]:
+        """Lấy danh sách Service với phân trang và hỗ trợ tìm kiếm"""
+        query = self.db.query(Service).filter(
             Service.deleted_at.is_(None)
-        ).offset(skip).limit(limit).all()
-    
-    def count_services(self) -> int:
+        )
+        if q:
+            term = f"%{q.strip()}%"
+            query = query.filter(
+                Service.name.ilike(term)
+            )
+        services = query.offset(skip).limit(limit).all()
+        return services
+
+    def count_services(self, q: Optional[str] = None) -> int:
         """Đếm tổng số Service"""
-        return self.db.query(Service).filter(Service.deleted_at.is_(None)).count()
-    
+        query = self.db.query(Service).filter(Service.deleted_at.is_(None))
+        if q:
+            term = f"%{q.strip()}%"
+            query = query.filter(
+                Service.name.ilike(term)
+            )
+        return query.count()
+
     def update_service(self, service_id: UUID, service_in: ServiceUpdate) -> Optional[Service]:
         db_service = self.get_service_by_id(service_id)
         if not db_service:

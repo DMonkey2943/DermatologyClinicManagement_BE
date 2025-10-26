@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from app.core.dependencies import AuthCredentialDepend
 from app.database import get_db
@@ -65,11 +65,12 @@ def read_user(
 @router.get("/", response_model=PaginatedResponse[UserResponse])
 @protected_route([RoleEnum.ADMIN])
 def read_users(
-    CREDENTIALS: AuthCredentialDepend,
-    skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),     # Query parameter với validation
-    limit: int = Query(100, ge=1, le=100, description="Số bản ghi tối đa"),
-    DB: Session = Depends(get_db),
-    CURRENT_USER = None,
+	CREDENTIALS: AuthCredentialDepend,
+	skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),
+	limit: int = Query(100, ge=1, le=100, description="Số bản ghi tối đa"),
+	q: Optional[str] = Query(None, description="Search query: tìm theo full_name (không phân biệt hoa thường) hoặc username hoặc phone_number"),
+	DB: Session = Depends(get_db),
+	CURRENT_USER = None,
 ):
     """
     Lấy danh sách người dùng với phân trang
@@ -77,8 +78,8 @@ def read_users(
     - limit: số bản ghi tối đa (mặc định 100, max 100)
     """
     repo = UserService(DB)
-    users = repo.get_users(skip=skip, limit=limit)
-    total = repo.count_users()
+    users = repo.get_users(skip=skip, limit=limit, q=q)
+    total = repo.count_users(q=q)
     page = (skip // limit) + 1
     total_pages = (total // limit) + (1 if total % limit else 0)
     meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
@@ -88,20 +88,36 @@ class UserService:
             return None
         return db_user
 
-    def get_users(self, skip: int = 0, limit: int = 10) -> list[User]:
-        """Lấy danh sách users với phân trang"""
-        users = self.db.query(User).filter(
-            User.deleted_at.is_(None)  # Chỉ lấy user chưa bị xóa
-        ).offset(skip).limit(limit).all()
+    def get_users(self, skip: int = 0, limit: int = 10, q: Optional[str] = None) -> list[User]:
+        """Lấy danh sách users với phân trang và hỗ trợ tìm kiếm theo full_name (case-insensitive) hoặc username hoặc phone_number"""
+        query = self.db.query(User).filter(User.deleted_at.is_(None))
+        if q:
+            term = f"%{q.strip()}%"
+            query = query.filter(
+                or_(
+                    User.full_name.ilike(term),
+                    User.username.ilike(term),
+                    User.phone_number.ilike(term)
+                )
+            )
+        users = query.offset(skip).limit(limit).all()
         return users
     
-    def count_users(self) -> int:
+    def count_users(self, q: Optional[str] = None) -> int:
         """
-        Đếm tổng số người dùng đang active trong database.
-        - Chỉ đếm các user có deleted_at (nếu dùng soft delete).
-        - Trả về số nguyên là tổng số bản ghi.
+        Đếm tổng số người dùng đang active trong database hoặc theo search query nếu q được cung cấp.
         """
-        return self.db.query(User).filter( User.deleted_at.is_(None)).count()
+        query = self.db.query(User).filter(User.deleted_at.is_(None))
+        if q:
+            term = f"%{q.strip()}%"
+            query = query.filter(
+                or_(
+                    User.full_name.ilike(term),
+                    User.username.ilike(term),
+                    User.phone_number.ilike(term)
+                )
+            )
+        return query.count()
     
     def update_user(self, user_id: UUID, user_update: UserUpdate) -> Optional[User]:
         """Cập nhật thông tin user"""

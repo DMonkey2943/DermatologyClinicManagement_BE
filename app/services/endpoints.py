@@ -56,6 +56,7 @@ def read_services(
     CREDENTIALS: AuthCredentialDepend,
     skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),
     limit: int = Query(10, ge=1, le=100, description="Số bản ghi lấy về"),
+    q: Optional[str] = Query(None, description="Từ khoá tìm kiếm theo tên dịch vụ"),
     DB: Session = Depends(get_db),
     CURRENT_USER = None,
 ):
@@ -65,10 +66,10 @@ def read_services(
     - Trả về danh sách dịch vụ cùng với thông tin phân trang
     """
     repo = ServiceService(DB)
-    total = repo.count_services()
+    services = repo.get_services(skip=skip, limit=limit, q=q)
+    total = repo.count_services(q=q)
     page = (skip // limit) + 1
     total_pages = (total // limit) + (1 if total % limit else 0)
-    services = repo.get_services(skip=skip, limit=limit)
     meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)
     return PaginatedResponse(message="Lấy danh sách dịch vụ thành công", data=services, meta=meta)
 
