@@ -10,6 +10,7 @@ class MedicalRecordStatusEnum(enum.Enum):
     """Enum cho trạng thái hồ sơ y tế"""
     COMPLETED = "COMPLETED"     # Hoàn thành
     IN_PROGRESS = "IN_PROGRESS" # Đang thực hiện
+    PAID = "PAID"               # Đã thanh toán
 
 class ImageTypeEnum(enum.Enum):
     """Enum cho loại hình ảnh da"""
