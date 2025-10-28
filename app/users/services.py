@@ -6,8 +6,9 @@ from datetime import datetime
 import bcrypt
 from app.users.models import User, Doctor
 from app.users.schemas import UserCreate, UserUpdate, UserTokenData, UserResponse, DoctorCombinedCreate, DoctorCombinedUpdate, DoctorResponse
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from app.core.response import ErrorResponse
+from app.utils.file_handler import file_handler
 
 class UserService:
     """Service class để xử lý logic liên quan đến User"""
@@ -64,6 +65,51 @@ class UserService:
         self.db.add(db_user)
         self.db.commit()           # Commit transaction
         self.db.refresh(db_user)   # Refresh để lấy ID và timestamp
+        return db_user
+    
+    async def create_user_with_avatar(self, user_in: UserCreate, avatar: Optional[UploadFile] = None) -> User:
+        """
+        Tạo user mới kèm avatar
+        - Upload avatar nếu có
+        - Tạo user với avatar URL
+        
+        Args:
+            user_in: Dữ liệu user từ request
+            avatar: File avatar upload (optional)
+        """
+        # Upload avatar nếu có
+        avatar_url = None
+        if avatar:
+            avatar_url = await file_handler.save_upload_file(avatar)
+
+        # Hash password trước khi lưu
+        hashed_password = self.get_password_hash(user_in.password)
+        
+        # Tạo đối tượng User từ schema
+        db_user = User(
+            username=user_in.username,
+            password=hashed_password,  # Lưu password đã hash
+            full_name=user_in.full_name,
+            dob=user_in.dob,
+            gender=user_in.gender,
+            phone_number=user_in.phone_number,
+            email=user_in.email,
+            role=user_in.role,
+            avatar=avatar_url
+        )
+        
+        # Thêm vào database
+        self.db.add(db_user)
+        self.db.commit()           # Commit transaction
+        self.db.refresh(db_user)   # Refresh để lấy ID và timestamp
+        return db_user
+
+    # @staticmethod
+    def get_user_by_id(self, user_id: UUID) -> Optional[User]:
+        """Lấy user theo ID"""
+        db_user = self.db.query(User).filter(and_(User.id == user_id, User.deleted_at.is_(None))).first()
+        if not db_user:
+            return None
         return db_user
 
     # @staticmethod

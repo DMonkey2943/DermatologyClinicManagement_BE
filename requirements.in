@@ -15,3 +15,5 @@ pydantic_settings
 passlib
 bcrypt
 PyJWT
+python-multipart
+pillow

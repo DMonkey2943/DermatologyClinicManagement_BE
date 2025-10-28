@@ -1,14 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime, date
 from app.core.dependencies import AuthCredentialDepend
 from app.database import get_db
 from app.users.schemas import UserCreate, UserUpdate, UserResponse
 from app.users.services import UserService
 from app.core.authentication import protected_route
-from app.users.models import UserRoleEnum as RoleEnum
+from app.users.models import GenderEnum, UserRoleEnum as RoleEnum
 from app.core.response import PaginationMeta, ResponseBase, PaginatedResponse
+from app.users.validators import (
+    validate_dob_at_least_18_form_data,
+    validate_phone_number_form_data,
+    validate_password_form_data,
+)
 
 router = APIRouter(
     prefix="/users",    # Tất cả endpoint sẽ có prefix /users
@@ -46,6 +53,68 @@ def create_user(
         )
     db_user = repo.create_user(user)
     return ResponseBase(message="User created successfully", data=db_user)
+
+@router.post("/avatar", response_model=ResponseBase, status_code=status.HTTP_201_CREATED)
+async def create_user_with_avatar(
+    CREDENTIALS: AuthCredentialDepend,
+    # Form data thay vì JSON body
+    username: str = Form(..., min_length=4, max_length=50, pattern=r'^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$'),
+    full_name: str = Form(..., min_length=2, max_length=50),
+    password: str = Form(...),
+    dob: Optional[date] = Form(None),
+    gender: Optional[GenderEnum] = Form(None),
+    phone_number: Optional[str] = Form(None),
+    email: EmailStr = Form(...),
+    role: RoleEnum = Form(RoleEnum.STAFF),
+    # File upload - optional
+    avatar: Optional[UploadFile] = File(None),
+    # Dependencies
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Tạo người dùng mới với avatar
+    - Nhận form data + file upload
+    - Upload avatar trước, sau đó tạo user với avatar_url
+    """
+    repo = UserService(DB)
+    validate_dob_at_least_18_form_data(dob)
+    validate_phone_number_form_data(phone_number)
+    validate_password_form_data(password)
+    
+    # Kiểm tra email đã tồn tại
+    if repo.get_user_by_email(email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email đã được sử dụng"
+        )
+    
+    # Kiểm tra username đã tồn tại
+    if repo.get_user_by_username(username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username đã được sử dụng"
+        )
+    
+    # Tạo user schema với avatar_url
+    user_data = UserCreate(
+        username=username,
+        password=password,
+        full_name=full_name,
+        email=email,
+        phone_number=phone_number,
+        dob=dob,
+        gender=gender,
+        role=role
+    )
+    
+    # Tạo user trong database
+    db_user = await repo.create_user_with_avatar(user_data, avatar)
+    
+    return ResponseBase(
+        message="Tạo user thành công",
+        data=UserResponse.model_validate(db_user)
+    )
 
 
 @router.get("/{user_id}", response_model=ResponseBase[UserResponse])

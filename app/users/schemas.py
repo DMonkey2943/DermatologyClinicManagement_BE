@@ -55,6 +55,31 @@ class UserCreate(UserBase):
     def _check_password(cls, v):
         return validate_password(v)
 
+class UserCreateWithAvatarForm(BaseModel):
+    username: str = Field(..., min_length=4, max_length=50, pattern='^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$')
+    full_name: Optional[str] = Field(None, min_length=2, max_length=50)
+    password: str
+    dob: Optional[date] = None
+    gender: Optional[GenderEnum] = None
+    phone_number: str
+    email: EmailStr
+    role: Optional[UserRoleEnum] = None
+
+    @field_validator("dob")
+    @classmethod
+    def _check_dob(cls, v):
+        return validate_dob_at_least_18(v)
+
+    @field_validator("phone_number")
+    @classmethod
+    def _check_phone(cls, v):
+        return validate_phone_number(v)
+
+    @field_validator("password")
+    @classmethod
+    def _check_password(cls, v):
+        return validate_password(v)
+
 class UserUpdate(BaseSchema):
     """Schema để cập nhật User - tất cả trường đều optional"""
     username: Optional[str] = Field(min_length=4, max_length=50, pattern='^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$', default=None)     

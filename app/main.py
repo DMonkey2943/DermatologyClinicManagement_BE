@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException, status
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from app.core.response import ErrorResponse
 from fastapi.exceptions import RequestValidationError
@@ -27,6 +28,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Cho phép các phương thức HTTP
     allow_headers=["Content-Type", "Authorization"],  # Cho phép header tùy chỉnh
 )
+
+# Mount thư mục uploads để serve static files
+# Khi truy cập /uploads/avatars/abc.jpg sẽ trả về file từ thư mục stactic/uploads/avatars/abc.jpg
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -66,8 +71,7 @@ app.include_router(services_router) # Include routes từ services
 app.include_router(medical_records_router) # Include routes từ medical_records
 app.include_router(prescriptions_router) # Include routes từ prescriptions
 app.include_router(service_indications_router) # Include routes từ service_indications
-app.include_router(invoices_router) # Include routes từinvoices
-
+app.include_router(invoices_router) # Include routes từ invoices
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Skin Clinic Backend"}
