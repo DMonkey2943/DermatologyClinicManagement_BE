@@ -8,7 +8,7 @@ from app.database import get_db
 from app.core.authentication import protected_route
 from app.users.models import UserRoleEnum as RoleEnum
 from app.core.response import PaginationMeta, ResponseBase, PaginatedResponse
-from app.prescriptions.schemas import PrescriptionCreate, PrescriptionDetailCreate, PrescriptionResponse, PrescriptionDetailResponse, PrescriptionFullResponse
+from app.prescriptions.schemas import PrescriptionCreate, PrescriptionDetailCreate, PrescriptionResponse, PrescriptionDetailResponse, PrescriptionFullResponse, PrescriptionUpdate
 from app.prescriptions.services import PrescriptionService
 
 router = APIRouter(
@@ -109,6 +109,24 @@ def read_prescriptions(
 #     if db_record is None:
 #         raise HTTPException(status_code=404, detail="đơn thuốc không tồn tại")
 #     return ResponseBase(message="Cập nhật đơn thuốc thành công", data=db_record)
+
+@router.put("/{record_id}", response_model=ResponseBase[PrescriptionFullResponse])
+@protected_route([RoleEnum.ADMIN, RoleEnum.DOCTOR])
+def update_prescription(
+    CREDENTIALS: AuthCredentialDepend,
+    record_id: UUID,
+    record: PrescriptionUpdate,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Cập nhật đơn thuốc 
+    - Chỉ ADMIN và DOCTOR mới có quyền cập nhật đơn thuốc
+    - Trả về thông tin đơn thuốc vừa cập nhật
+    """
+    repo = PrescriptionService(DB)
+    db_record = repo.update_prescription(record_id, record)
+    return ResponseBase(message="Đơn thuốc được cập nhật thành công", data=db_record)
 
 # @router.delete("/{record_id}", response_model=ResponseBase[None])
 # @protected_route([RoleEnum.ADMIN, RoleEnum.DOCTOR])

@@ -33,6 +33,7 @@ class PrescriptionCreate(PrescriptionBase):
 class PrescriptionUpdate(BaseSchema):
     """Schema cập nhật Prescription"""
     notes: Optional[str] = None
+    prescription_details: Optional[List[PrescriptionDetailInput]] = None
 
 class PrescriptionResponse(PrescriptionBase):
     """Schema trả về thông tin Prescription"""
@@ -91,3 +92,4 @@ class PrescriptionFullResponse(PrescriptionBase):
     id: UUID
     created_at: datetime
     medications: Optional[List[PrescriptionDetailResponse]] = None
+    prescription_details: Optional[List[PrescriptionDetailResponse]] = None

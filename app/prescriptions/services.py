@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.prescriptions.models import Prescription, PrescriptionDetail
 from app.prescriptions.schemas import PrescriptionCreate, PrescriptionUpdate, PrescriptionResponse, PrescriptionDetailCreate, PrescriptionDetailUpdate, PrescriptionDetailResponse, PrescriptionFullResponse
 from uuid import UUID
@@ -51,16 +51,25 @@ class PrescriptionService:
     # Lấy Prescription theo ID
     def get_prescription_by_id(self, prescription_id: UUID) -> Optional[Prescription]:
         """Lấy Prescription theo ID"""
-        prescription = self.db.query(Prescription).filter(Prescription.id == prescription_id).first()
-        prescription_details = self.get_prescription_details(prescription_id=prescription.id)
-        full_prescription = PrescriptionFullResponse(
-            id = prescription.id,
-            medical_record_id = prescription.medical_record_id,
-            notes = prescription.notes,
-            created_at = prescription.created_at,
-            medications = prescription_details,
+        # prescription = self.db.query(Prescription).filter(Prescription.id == prescription_id).first()
+        # prescription_details = self.get_prescription_details(prescription_id=prescription.id)
+        # full_prescription = PrescriptionFullResponse(
+        #     id = prescription.id,
+        #     medical_record_id = prescription.medical_record_id,
+        #     notes = prescription.notes,
+        #     created_at = prescription.created_at,
+        #     medications = prescription_details,
+        # )
+        # return full_prescription
+        prescription = (
+            self.db.query(Prescription)
+            .options(joinedload(Prescription.prescription_details))
+            .filter(Prescription.id == prescription_id)
+            .first()
         )
-        return full_prescription
+        if not prescription:
+            raise HTTPException(status_code=404, detail="Prescription not found")
+        return prescription
     
     # Lấy Prescription theo medical record ID
     def get_prescription_by_medical_record_id(self, medical_record_id: UUID) -> Optional[PrescriptionFullResponse]:
@@ -89,17 +98,47 @@ class PrescriptionService:
         return self.db.query(Prescription).count()
     
     # Cập nhật Prescription
-    # def update_prescription(self, prescription_id: UUID, prescription_in: PrescriptionUpdate) -> Optional[Prescription]:
-    #     """Cập nhật Prescription"""
-    #     db_prescription = self.get_prescription_by_id(prescription_id)
-    #     if not db_prescription:
-    #         return None
-    #     update_data = prescription_in.model_dump(exclude_unset=True)
-    #     for field, value in update_data.items():
-    #         setattr(db_prescription, field, value)
-    #     self.db.commit()
-    #     self.db.refresh(db_prescription)
-    #     return db_prescription
+    def update_prescription(self, prescription_id: UUID, prescription_in: PrescriptionUpdate) -> Optional[Prescription]:
+        """Cập nhật Prescription"""
+        try: 
+            db_prescription = self.get_prescription_by_id(prescription_id)
+            if not db_prescription:
+                raise HTTPException(status_code=404, detail="Prescription not found")
+            if prescription_in.notes is not None:
+                db_prescription.notes = prescription_in.notes            
+            # self.db.refresh(db_prescription)
+
+            self.db.query(PrescriptionDetail).filter(
+                PrescriptionDetail.prescription_id == prescription_id
+            ).delete()
+
+            if prescription_in.prescription_details:
+                for detail_in in prescription_in.prescription_details:
+                    medication = self.medication_service.get_medication_by_id(detail_in.medication_id)
+                    if not medication:
+                        # Sẽ trigger rollback tự động khi exception
+                        raise HTTPException(status_code=404, detail=f"Medication with id {detail_in.medication_id} not found")
+                    detail_create = PrescriptionDetailCreate(
+                        prescription_id=db_prescription.id,
+                        medication_id=detail_in.medication_id,
+                        name=medication.name,
+                        dosage_form=medication.dosage_form,
+                        quantity=detail_in.quantity,
+                        dosage=detail_in.dosage,
+                        unit_price=medication.price,
+                        total_price=medication.price*detail_in.quantity,
+                    )
+                    db_prescription_detail = PrescriptionDetail(**detail_create.model_dump())
+                    self.db.add(db_prescription_detail)
+                    self.db.flush()
+            self.db.commit()  # Commit tất cả
+
+            return self.get_prescription_by_id(db_prescription.id)
+        except Exception as e:
+            self.db.rollback()  # Rollback tự động khi có exception
+            raise HTTPException(status_code=400, detail=f"Failed to update prescription: {str(e)}")
+        
+
 
     
     # Tạo PrescriptionDetail mới
