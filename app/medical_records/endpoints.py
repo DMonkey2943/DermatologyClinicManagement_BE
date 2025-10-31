@@ -38,6 +38,23 @@ def create_medical_record(
     db_record = repo.create_medical_record(record)
     return ResponseBase(message="Hồ sơ khám bệnh được tạo thành công", data=db_record)
 
+@router.get("/by-appointment/{appointment_id}", response_model=ResponseBase[MedicalRecordResponse])
+def read_medical_record_by_appointment_id(
+    CREDENTIALS: AuthCredentialDepend,
+    appointment_id: UUID,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Lấy thông tin hồ sơ khám bệnh theo ID lịch hẹn
+    - Bất kỳ ai cũng có thể xem thông tin hồ sơ khám bệnh
+    """
+    repo = MedicalRecordService(DB)
+    db_record = repo.get_medical_record_by_appointment_id(appointment_id)
+    if db_record is None:
+        return ResponseBase(message="Thông tin hồ sơ khám bệnh theo id lịch hẹn không tồn tại", data=None)
+    return ResponseBase(message="Lấy thông tin hồ sơ khám bệnh thành công", data=db_record)
+
 @router.get("/{record_id}/prescription", response_model=ResponseBase[PrescriptionFullResponse])
 def read_prescription_by_medical_record_id(
     CREDENTIALS: AuthCredentialDepend,

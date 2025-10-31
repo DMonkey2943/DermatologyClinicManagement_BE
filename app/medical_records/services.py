@@ -26,6 +26,10 @@ class MedicalRecordService:
         """Lấy MedicalRecord theo ID"""
         return self.db.query(MedicalRecord).filter(MedicalRecord.id == record_id).first()
     
+    def get_medical_record_by_appointment_id(self, appointment_id: UUID) -> Optional[MedicalRecord]:
+        """Lấy MedicalRecord theo ID"""
+        return self.db.query(MedicalRecord).filter(MedicalRecord.appointment_id == appointment_id).first()
+    
     def get_medical_records(
         self, 
         skip: int = 0, 
@@ -50,6 +54,8 @@ class MedicalRecordService:
             #     raise HTTPException(status_code=400, detail="User không phải là bác sĩ")
             query = query.filter(MedicalRecord.doctor_id == doctor_id)
         
+        # ✅ Thêm sắp xếp theo created_at giảm dần
+        query = query.order_by(MedicalRecord.created_at.desc())
         medical_records = query.offset(skip).limit(limit).all()        
         result = []
         for medical_record in medical_records:            
