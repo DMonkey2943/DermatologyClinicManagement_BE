@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.service_indications.models import ServiceIndication, ServiceIndicationDetail
 from app.service_indications.schemas import ServiceIndicationCreate, ServiceIndicationUpdate, ServiceIndicationResponse, ServiceIndicationDetailCreate, ServiceIndicationDetailUpdate, ServiceIndicationDetailResponse, ServiceIndicationFullResponse
 from uuid import UUID
@@ -48,16 +48,25 @@ class ServiceIndicationService:
     # Lấy ServiceIndication theo ID
     def get_service_indication_by_id(self, service_indication_id: UUID) -> Optional[ServiceIndication]:
         """Lấy ServiceIndication theo ID"""
-        service_indication = self.db.query(ServiceIndication).filter(ServiceIndication.id == service_indication_id).first()
-        service_indication_details = self.get_service_indication_details(service_indication_id=service_indication.id)
-        full_service_indication = ServiceIndicationFullResponse(
-            id = service_indication.id,
-            medical_record_id = service_indication.medical_record_id,
-            notes = service_indication.notes,
-            created_at = service_indication.created_at,
-            services = service_indication_details,
+        # service_indication = self.db.query(ServiceIndication).filter(ServiceIndication.id == service_indication_id).first()
+        # service_indication_details = self.get_service_indication_details(service_indication_id=service_indication.id)
+        # full_service_indication = ServiceIndicationFullResponse(
+        #     id = service_indication.id,
+        #     medical_record_id = service_indication.medical_record_id,
+        #     notes = service_indication.notes,
+        #     created_at = service_indication.created_at,
+        #     services = service_indication_details,
+        # )
+        # return full_service_indication
+        service_indication = (
+            self.db.query(ServiceIndication)
+            .options(joinedload(ServiceIndication.service_indication_details))
+            .filter(ServiceIndication.id == service_indication_id)
+            .first()
         )
-        return full_service_indication
+        if not service_indication:
+            raise HTTPException(status_code=404, detail="Service Indication not found")
+        return service_indication
     
     # Lấy ServiceIndication theo medical record ID
     def get_service_indication_by_medical_record_id(self, medical_record_id: UUID) -> Optional[ServiceIndicationFullResponse]:
@@ -86,17 +95,44 @@ class ServiceIndicationService:
         return self.db.query(ServiceIndication).count()
     
     # Cập nhật ServiceIndication
-    # def update_service_indication(self, service_indication_id: UUID, service_indication_in: ServiceIndicationUpdate) -> Optional[ServiceIndication]:
-    #     """Cập nhật ServiceIndication"""
-    #     db_service_indication = self.get_service_indication_by_id(service_indication_id)
-    #     if not db_service_indication:
-    #         return None
-    #     update_data = service_indication_in.model_dump(exclude_unset=True)
-    #     for field, value in update_data.items():
-    #         setattr(db_service_indication, field, value)
-    #     self.db.commit()
-    #     self.db.refresh(db_service_indication)
-    #     return db_service_indication
+    def update_service_indication(self, service_indication_id: UUID, service_indication_in: ServiceIndicationUpdate) -> Optional[ServiceIndication]:
+        """Cập nhật ServiceIndication"""
+        try: 
+            db_service_indication = self.get_service_indication_by_id(service_indication_id)
+            if not db_service_indication:
+                raise HTTPException(status_code=404, detail="ServiceIndication not found")
+            
+            if service_indication_in.notes is not None:
+                db_service_indication.notes = service_indication_in.notes
+
+            self.db.query(ServiceIndicationDetail).filter(
+                ServiceIndicationDetail.service_indication_id == service_indication_id
+            ).delete()
+
+            if service_indication_in.service_indication_details:
+                for detail_in in service_indication_in.service_indication_details:
+                    service = self.service_service.get_service_by_id(detail_in.service_id)
+                    if not service:
+                        # Sẽ trigger rollback tự động khi exception
+                        raise HTTPException(status_code=404, detail=f"Service with id {detail_in.service_id} not found")
+                    detail_create = ServiceIndicationDetailCreate(
+                        service_indication_id=db_service_indication.id,
+                        service_id=detail_in.service_id,
+                        name=service.name,
+                        quantity=detail_in.quantity,
+                        unit_price=service.price,
+                        total_price=service.price*detail_in.quantity,
+                    )
+                    # self.create_service_indication_detail(detail_create)
+                    db_service_indication_detail = ServiceIndicationDetail(**detail_create.model_dump())
+                    self.db.add(db_service_indication_detail)
+                    self.db.flush()
+                    
+            self.db.commit() # Commit tất cả
+            return self.get_service_indication_by_id(db_service_indication.id)
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(status_code=400, detail=f"Failed to create update indication: {str(e)}")
 
     
     # Tạo ServiceIndicationDetail mới

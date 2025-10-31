@@ -8,7 +8,7 @@ from app.database import get_db
 from app.core.authentication import protected_route
 from app.users.models import UserRoleEnum as RoleEnum
 from app.core.response import PaginationMeta, ResponseBase, PaginatedResponse
-from app.service_indications.schemas import ServiceIndicationCreate, ServiceIndicationDetailCreate, ServiceIndicationResponse, ServiceIndicationDetailResponse, ServiceIndicationFullResponse
+from app.service_indications.schemas import ServiceIndicationCreate, ServiceIndicationDetailCreate, ServiceIndicationResponse, ServiceIndicationDetailResponse, ServiceIndicationFullResponse, ServiceIndicationUpdate
 from app.service_indications.services import ServiceIndicationService
 
 router = APIRouter(
@@ -90,25 +90,23 @@ def read_service_indications(
     meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)
     return PaginatedResponse(message="Lấy danh sách phiếu chỉ định dịch vụ thành công", data=records, meta=meta)
 
-# @router.put("/{record_id}", response_model=ResponseBase[ServiceIndicationResponse])
-# @protected_route([RoleEnum.ADMIN, RoleEnum.DOCTOR])
-# def update_medical_record(
-#     CREDENTIALS: AuthCredentialDepend,
-#     record_id: UUID,
-#     record: MedicalRecordUpdate,
-#     DB: Session = Depends(get_db),
-#     CURRENT_USER = None,
-# ):
-#     """
-#     Cập nhật thông tin phiếu chỉ định dịch vụ
-#     - Chỉ ADMIN và DOCTOR mới có quyền cập nhật phiếu chỉ định dịch vụ
-#     - Trả về thông tin phiếu chỉ định dịch vụ vừa cập nhật
-#     """
-#     repo = ServiceIndicationService(DB)
-#     db_record = repo.update_medical_record(record_id, record)
-#     if db_record is None:
-#         raise HTTPException(status_code=404, detail="phiếu chỉ định dịch vụ không tồn tại")
-#     return ResponseBase(message="Cập nhật phiếu chỉ định dịch vụ thành công", data=db_record)
+@router.put("/{record_id}", response_model=ResponseBase[ServiceIndicationFullResponse])
+@protected_route([RoleEnum.ADMIN, RoleEnum.DOCTOR])
+def update_service_indication(
+    CREDENTIALS: AuthCredentialDepend,
+    record_id: UUID,
+    record: ServiceIndicationUpdate,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Cập nhật phiếu chỉ định dịch vụ 
+    - Chỉ ADMIN và DOCTOR mới có quyền cập nhật phiếu chỉ định dịch vụ
+    - Trả về thông tin phiếu chỉ định dịch vụ vừa cập nhật
+    """
+    repo = ServiceIndicationService(DB)
+    db_record = repo.update_service_indication(record_id, record)
+    return ResponseBase(message="phiếu chỉ định dịch vụ được cập nhật thành công", data=db_record)
 
 # @router.delete("/{record_id}", response_model=ResponseBase[None])
 # @protected_route([RoleEnum.ADMIN, RoleEnum.DOCTOR])

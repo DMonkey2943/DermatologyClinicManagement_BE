@@ -32,6 +32,7 @@ class ServiceIndicationCreate(ServiceIndicationBase):
 class ServiceIndicationUpdate(BaseSchema):
     """Schema cập nhật ServiceIndication"""
     notes: Optional[str] = None
+    service_indication_details: Optional[List[ServiceIndicationDetailInput]] = None
 
 class ServiceIndicationResponse(ServiceIndicationBase):
     """Schema trả về thông tin ServiceIndication"""
@@ -80,5 +81,6 @@ class ServiceIndicationFullResponse(ServiceIndicationBase):
     id: UUID
     created_at: datetime
     services: Optional[List[ServiceIndicationDetailResponse]] = None
+    service_indication_details: Optional[List[ServiceIndicationDetailResponse]] = None
 
     
