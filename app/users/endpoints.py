@@ -96,6 +96,13 @@ async def create_user_with_avatar(
             detail="Username đã được sử dụng"
         )
     
+    # Kiểm tra số điện thoại đã tồn tại
+    if repo.get_user_by_phone_number(phone_number):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Số điện thoại đã được sử dụng"
+        )
+    
     # Tạo user schema với avatar_url
     user_data = UserCreate(
         username=username,
@@ -176,6 +183,86 @@ def update_user(
             detail="User not found"
         )
     return ResponseBase(message="User updated successfully", data=db_user)
+
+@router.put("/avatar/{user_id}", response_model=ResponseBase)
+async def update_user(
+    user_id: UUID,
+    CREDENTIALS: AuthCredentialDepend,
+    username: Optional[str] = Form(None, min_length=4, max_length=50, pattern=r'^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$'),
+    full_name: Optional[str] = Form(None, min_length=2, max_length=50),
+    # password: Optional[str] = Form(None),
+    dob: Optional[date] = Form(None),
+    gender: Optional[GenderEnum] = Form(None),
+    phone_number: Optional[str] = Form(None),
+    email: Optional[EmailStr] = Form(None),
+    role: Optional[RoleEnum] = Form(None),
+    avatar: Optional[UploadFile] = File(None),
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Cập nhật thông tin người dùng, bao gồm avatar
+    - Nhận form data + file upload
+    - Nếu có avatar mới, xóa avatar cũ (nếu tồn tại) trước khi lưu avatar mới
+    """
+    repo = UserService(DB)
+    
+    # Kiểm tra user tồn tại
+    db_user = repo.get_user_by_id(user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy người dùng"
+        )
+    
+    # Validate dữ liệu đầu vào
+    if dob:
+        validate_dob_at_least_18_form_data(dob)
+    if phone_number:
+        validate_phone_number_form_data(phone_number)
+    # if password:
+    #     validate_password_form_data(password)
+    
+    # Kiểm tra email đã tồn tại (nếu cập nhật email)
+    if email and email != db_user.email and repo.get_user_by_email(email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email đã được sử dụng"
+        )
+    
+    # Kiểm tra username đã tồn tại (nếu cập nhật username)
+    if username and username != db_user.username and repo.get_user_by_username(username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username đã được sử dụng"
+        )
+    
+    # Kiểm tra số điện thoại đã tồn tại (nếu cập nhật số điện thoại)
+    if phone_number and phone_number != db_user.phone_number and repo.get_user_by_phone_number(phone_number):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Số điện thoại đã được sử dụng"
+        )
+    
+    # Tạo user schema cho cập nhật
+    user_data = UserUpdate(
+        username=username or db_user.username,
+        # password=password or db_user.password,
+        full_name=full_name or db_user.full_name,
+        email=email or db_user.email,
+        phone_number=phone_number or db_user.phone_number,
+        dob=dob or db_user.dob,
+        gender=gender or db_user.gender,
+        role=role or db_user.role
+    )
+    
+    # Cập nhật user trong database
+    updated_user = await repo.update_user_with_avatar(user_id, user_data, avatar)
+    
+    return ResponseBase(
+        message="Cập nhật user thành công",
+        data=UserResponse.model_validate(updated_user)
+    )
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

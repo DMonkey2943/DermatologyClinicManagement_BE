@@ -6,7 +6,7 @@ from datetime import datetime
 import bcrypt
 from app.users.models import User, Doctor
 from app.users.schemas import UserCreate, UserUpdate, UserTokenData, UserResponse, DoctorCombinedCreate, DoctorCombinedUpdate, DoctorResponse
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException, UploadFile, status
 from app.core.response import ErrorResponse
 from app.utils.file_handler import file_handler
 
@@ -133,6 +133,13 @@ class UserService:
         if not db_user:
             return None
         return db_user
+    
+    def get_user_by_phone_number(self, phone_number: str) -> Optional[User]:
+        """Lấy user theo phone_number"""
+        db_user = self.db.query(User).filter(and_(User.phone_number == phone_number, User.deleted_at.is_(None))).first()
+        if not db_user:
+            return None
+        return db_user
 
     def get_users(self, skip: int = 0, limit: int = 10, q: Optional[str] = None) -> list[User]:
         """Lấy danh sách users với phân trang và hỗ trợ tìm kiếm theo full_name (case-insensitive) hoặc username hoặc phone_number"""
@@ -189,7 +196,53 @@ class UserService:
         self.db.commit()
         return True
 
-
+    async def update_user_with_avatar(self, user_id: UUID, user_in: UserUpdate, avatar: Optional[UploadFile] = None) -> User:
+        """
+        Cập nhật user kèm avatar
+        - Nếu có avatar mới, xóa avatar cũ (nếu tồn tại) trước khi lưu avatar mới
+        - Cập nhật thông tin user trong database
+        
+        Args:
+            user_id: ID của user cần cập nhật
+            user_in: Dữ liệu user từ request
+            avatar: File avatar upload (optional)
+        
+        Returns:
+            User: Đối tượng user đã được cập nhật
+        """
+        # Lấy user từ database
+        db_user = self.db.query(User).filter(User.id == user_id).first()
+        if not db_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy người dùng"
+            )
+        
+        # Xử lý avatar
+        avatar_url = db_user.avatar
+        if avatar:
+            # Xóa avatar cũ nếu tồn tại
+            if db_user.avatar:
+                await file_handler.delete_file(db_user.avatar)
+            # Lưu avatar mới
+            avatar_url = await file_handler.save_upload_file(avatar)
+        
+        # Hash password nếu có cập nhật
+        # hashed_password = self.get_password_hash(user_in.password) if user_in.password else db_user.password
+        
+        # Cập nhật thông tin user
+        update_data = user_in.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_user, key, value)
+        
+        # Cập nhật avatar_url
+        db_user.avatar = avatar_url
+        
+        # Lưu vào database
+        self.db.commit()
+        self.db.refresh(db_user)
+        
+        return db_user
 
 class DoctorService:
     """Service class để xử lý logic liên quan đến Doctor"""

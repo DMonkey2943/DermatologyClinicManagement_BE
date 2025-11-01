@@ -159,7 +159,7 @@ class FileHandler:
             # Đóng file upload
             file.file.close()
     
-    def delete_file(self, file_url: Optional[str]) -> None:
+    async def delete_file(self, file_url: Optional[str]) -> None:
         """
         Xóa file ảnh khỏi server
         
