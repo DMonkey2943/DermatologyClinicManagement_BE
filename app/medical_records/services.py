@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from app.medical_records.models import MedicalRecord
 from app.medical_records.schemas import MedicalRecordCreate, MedicalRecordUpdate, MedicalRecordResponse
 from uuid import UUID
@@ -76,11 +77,12 @@ class MedicalRecordService:
             ))
         return result
     
-    def get_medical_records_by_patient(self, patient_id: UUID, skip: int = 0, limit: int = 10) -> List[MedicalRecord]:
+    def get_medical_records_by_patient(self, patient_id: UUID, skip: int = 0, limit: int = 5) -> List[MedicalRecord]:
         """Lấy danh sách MedicalRecord theo patient_id với phân trang"""
-        return self.db.query(MedicalRecord).filter(
-            MedicalRecord.patient_id == patient_id
-        ).offset(skip).limit(limit).all()
+        return self.db.query(MedicalRecord).filter(and_(
+            MedicalRecord.patient_id == patient_id,
+            MedicalRecord.status == 'PAID'
+        )).order_by(MedicalRecord.created_at.desc()).offset(skip).limit(limit).all()
     
     def count_medical_records(
         self,
@@ -95,6 +97,17 @@ class MedicalRecordService:
         # Lọc theo bác sĩ
         if doctor_id:
             query = query.filter(MedicalRecord.doctor_id == doctor_id)
+        return query.count()
+    
+    def count_medical_records_by_patient(
+        self,
+        patient_id: Optional[UUID] = None,
+    ) -> int:        
+        """Đếm tổng số lịch hẹn của bệnh nhân"""
+        query = self.db.query(MedicalRecord).filter(and_(
+            MedicalRecord.patient_id == patient_id,
+            MedicalRecord.status == 'PAID'
+        ))
         return query.count()
     
     def update_medical_record(self, record_id: UUID, record_in: MedicalRecordUpdate) -> Optional[MedicalRecord]:

@@ -133,7 +133,7 @@ def read_medical_records_by_patient(
     CREDENTIALS: AuthCredentialDepend,
     patient_id: UUID,
     skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),
-    limit: int = Query(10, ge=1, le=100, description="Số bản ghi lấy về"),
+    limit: int = Query(5, ge=1, le=100, description="Số bản ghi lấy về"),
     DB: Session = Depends(get_db),
     CURRENT_USER = None,
 ):
@@ -142,7 +142,7 @@ def read_medical_records_by_patient(
     - Bất kỳ ai cũng có thể xem danh sách hồ sơ khám bệnh của bệnh nhân
     """
     repo = MedicalRecordService(DB)
-    total = repo.count_medical_records()
+    total = repo.count_medical_records_by_patient(patient_id)
     page = (skip // limit) + 1
     total_pages = (total // limit) + (1 if total % limit else 0)
     records = repo.get_medical_records_by_patient(patient_id=patient_id, skip=skip, limit=limit)
