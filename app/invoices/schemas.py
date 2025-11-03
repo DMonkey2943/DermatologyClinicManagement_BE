@@ -71,6 +71,7 @@ class InvoiceFullResponse(InvoiceResponse):
     """Schema trả về thông tin Invoice full"""
     medications: Optional[List[PrescriptionDetailResponse]] = None
     services: Optional[List[ServiceIndicationDetailResponse]] = None
+    diagnosis: Optional[str] = None
 
 
 

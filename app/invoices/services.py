@@ -59,11 +59,11 @@ class InvoiceService:
             self.db.add(medical_record)
 
             # Cập nhật appointment status = "COMPLETED"
-            appointment = self.appointment_service.get_appointment_by_id(medical_record.appointment_id)
-            if not appointment:
-                raise HTTPException(status_code=404, detail="Lịch hẹn khám không tồn tại")
-            appointment.status = "COMPLETED"
-            self.db.add(appointment)
+            # appointment = self.appointment_service.get_appointment_by_id(medical_record.appointment_id)
+            # if not appointment:
+            #     raise HTTPException(status_code=404, detail="Lịch hẹn khám không tồn tại")
+            # appointment.status = "COMPLETED"
+            # self.db.add(appointment)
 
             # Commit tất cả thay đổi cùng lúc
             self.db.commit()
@@ -83,6 +83,7 @@ class InvoiceService:
         patient = self.patient_service.get_patient_by_id(invoice.patient_id)
         doctor = self.user_service.get_user_by_id(invoice.doctor_id)
         created_by = self.user_service.get_user_by_id(invoice.created_by)
+        medical_record_info = self.medical_record_service.get_medical_record_by_id(invoice.medical_record_id)
         prescription = self.prescription_service.get_prescription_by_medical_record_id(invoice.medical_record_id)
         service_indication = self.service_indication_service.get_service_indication_by_medical_record_id(invoice.medical_record_id)
         full_invoice = InvoiceFullResponse(
@@ -101,6 +102,7 @@ class InvoiceService:
             patient=patient,
             doctor=doctor,
             created_by_user=created_by,
+            diagnosis = medical_record_info.diagnosis,
             medications = prescription.medications,
             services = service_indication.services,
         )
@@ -141,7 +143,7 @@ class InvoiceService:
     # Lấy danh sách Invoice với phân trang
     def get_invoices(self, skip: int = 0, limit: int = 10) -> List[Invoice]:
         """Lấy danh sách Invoice với phân trang"""
-        return self.db.query(Invoice).offset(skip).limit(limit).all()
+        return self.db.query(Invoice).order_by(Invoice.created_at.desc()).offset(skip).limit(limit).all()
     
     # Đếm tổng số Invoice
     def count_invoices(self) -> int:
