@@ -97,14 +97,22 @@ class AppointmentService:
     def get_appointments(
         self,
         doctor_id: Optional[UUID] = None,
+        patient_id: Optional[UUID] = None,  # Thêm patient_id
+        status: Optional[List[AppointmentStatusEnum]] = None,  # Thêm status
         appointment_date: Optional[date] = None,
         week_start: Optional[date] = None,
         month: Optional[str] = None,
+        upcoming: bool = False,  # Thêm tham số upcoming
         skip: int = 0,
         limit: int = 10
     ) -> List[AppointmentResponse]:
         """Lấy danh sách lịch hẹn với phân trang và các bộ lọc"""
         query = self.db.query(Appointment)
+
+        # Lọc upcoming
+        if upcoming:
+            status = ["SCHEDULED", "WAITING"]  # Chỉ lấy SCHEDULED và WAITING
+            query = query.filter(Appointment.appointment_date >= date.today())
 
         # Lọc theo bác sĩ
         if doctor_id:
@@ -114,6 +122,18 @@ class AppointmentService:
             # if doctor.role != "DOCTOR":
             #     raise HTTPException(status_code=400, detail="User không phải là bác sĩ")
             query = query.filter(Appointment.doctor_id == doctor_id)
+
+        # Lọc theo bệnh nhân
+        if patient_id:
+            patient = self.patient_service.get_patient_by_id(patient_id)
+            if not patient:
+                raise HTTPException(status_code=404, detail="Bệnh nhân không tồn tại")
+            query = query.filter(Appointment.patient_id == patient_id)
+
+        # Lọc theo trạng thái
+        # if status:
+        if status and not upcoming:
+            query = query.filter(Appointment.status.in_(status))
 
         # Lọc theo ngày
         if appointment_date:
@@ -136,6 +156,17 @@ class AppointmentService:
                 query = query.filter(Appointment.appointment_date.between(start_date, end_date))
             except ValueError:
                 raise HTTPException(status_code=400, detail="Định dạng tháng không hợp lệ, sử dụng YYYY-MM")
+
+        # Áp dụng sắp xếp
+        if upcoming or appointment_date:
+            # Sắp xếp theo appointment_date và appointment_time tăng dần
+            query = query.order_by(Appointment.appointment_date.asc(), Appointment.appointment_time.asc())
+        elif doctor_id or patient_id or status or week_start or month:
+            # Sắp xếp theo appointment_date và appointment_time giảm dần
+            query = query.order_by(Appointment.appointment_date.desc(), Appointment.appointment_time.desc())
+        else:
+            # Mặc định sắp xếp theo created_at giảm dần
+            query = query.order_by(Appointment.created_at.desc())
 
         # Áp dụng phân trang
         appointments = query.offset(skip).limit(limit).all()
@@ -162,16 +193,33 @@ class AppointmentService:
     def count_appointments(
         self,
         doctor_id: Optional[UUID] = None,
+        patient_id: Optional[UUID] = None,  # Thêm patient_id
+        status: Optional[List[AppointmentStatusEnum]] = None,  # Thêm status
         appointment_date: Optional[date] = None,
         week_start: Optional[date] = None,
-        month: Optional[str] = None
+        month: Optional[str] = None,
+        upcoming: bool = False,  # Thêm tham số upcoming
     ) -> int:
         """Đếm tổng số lịch hẹn với các bộ lọc"""
         query = self.db.query(Appointment)
 
+         # Lọc upcoming
+        if upcoming:
+            status = [AppointmentStatusEnum.SCHEDULED, AppointmentStatusEnum.WAITING]  # Chỉ lấy SCHEDULED và WAITING
+            query = query.filter(Appointment.appointment_date >= date.today())
+
         # Lọc theo bác sĩ
         if doctor_id:
             query = query.filter(Appointment.doctor_id == doctor_id)
+        
+        # Lọc theo bệnh nhân
+        if patient_id:
+            query = query.filter(Appointment.patient_id == patient_id)
+
+        # Lọc theo trạng thái
+        # if status:
+        if status and not upcoming:
+            query = query.filter(Appointment.status.in_(status))
 
         # Lọc theo ngày
         if appointment_date:

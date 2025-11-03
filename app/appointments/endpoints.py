@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 from datetime import date
+from app.appointments.models import AppointmentStatusEnum
 from app.core.dependencies import AuthCredentialDepend
 from app.database import get_db
 from app.appointments.schemas import AppointmentCreate, AppointmentUpdate, AppointmentResponse
@@ -55,9 +56,12 @@ def read_appointment(
 def read_appointments(
     CREDENTIALS: AuthCredentialDepend,
     doctor_id: Optional[UUID] = Query(None, description="ID bác sĩ (user_id) để lọc"),
+    patient_id: Optional[UUID] = Query(None, description="ID bệnh nhân để lọc"),
+    status: Optional[List[AppointmentStatusEnum]] = Query(None, description="Danh sách trạng thái để lọc (SCHEDULED, WAITING, COMPLETED, CANCELLED)"),
     appointment_date: Optional[date] = Query(None, description="Ngày hẹn để lọc (YYYY-MM-DD)"),
     week_start: Optional[date] = Query(None, description="Ngày bắt đầu tuần để lọc (YYYY-MM-DD)"),
     month: Optional[str] = Query(None, description="Tháng để lọc (YYYY-MM)"),
+    upcoming: bool = Query(False, description="Lọc các lịch hẹn sắp tới (SCHEDULED hoặc WAITING từ ngày hiện tại trở đi)"),  # Thêm upcoming
     skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),
     limit: int = Query(100, ge=1, le=100, description="Số bản ghi tối đa"),
     DB: Session = Depends(get_db),
@@ -65,7 +69,7 @@ def read_appointments(
 ):
     """
     Lấy danh sách lịch hẹn với phân trang và bộ lọc
-    - Có thể lọc theo bác sĩ, ngày, tuần hoặc tháng
+    - Có thể lọc theo bác sĩ, bệnh nhân, các trạng thái, ngày, tuần hoặc tháng
     - Bao gồm thông tin bệnh nhân và bác sĩ
     """
     repo = AppointmentService(DB)
@@ -79,15 +83,21 @@ def read_appointments(
         skip=skip,
         limit=limit,
         doctor_id=doctor_id,
+        patient_id=patient_id, 
+        status=status,
         appointment_date=appointment_date,
         week_start=week_start,
-        month=month
+        month=month,
+        upcoming=upcoming
     )
     total = repo.count_appointments(
         doctor_id=doctor_id,
+        patient_id=patient_id, 
+        status=status,
         appointment_date=appointment_date,
         week_start=week_start,
-        month=month
+        month=month,
+        upcoming=upcoming
     )
     page = (skip // limit) + 1
     total_pages = (total // limit) + (1 if total % limit else 0)
