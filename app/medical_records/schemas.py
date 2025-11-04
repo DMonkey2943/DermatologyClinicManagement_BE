@@ -53,7 +53,6 @@ class MedicalRecordResponse(MedicalRecordBase):
 class SkinImageBase(BaseSchema):
     """Schema cơ bản cho Skin Image"""
     medical_record_id: UUID                 # ID hồ sơ y tế
-    image_path: str                         # Đường dẫn hình ảnh
     image_type: ImageTypeEnum               # Loại hình ảnh
     ai_results: Optional[str] = None        # Kết quả AI
 
@@ -69,3 +68,4 @@ class SkinImageResponse(SkinImageBase):
     """Schema trả về thông tin Skin Image"""
     id: UUID
     created_at: datetime
+    image_path: str                         # Đường dẫn hình ảnh

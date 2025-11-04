@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
@@ -6,18 +6,19 @@ from datetime import date
 from app.core.dependencies import AuthCredentialDepend
 from app.database import get_db
 from app.core.authentication import protected_route
+from app.medical_records.models import ImageTypeEnum
 from app.prescriptions.schemas import PrescriptionFullResponse
 from app.prescriptions.services import PrescriptionService
 from app.service_indications.schemas import ServiceIndicationFullResponse
 from app.service_indications.services import ServiceIndicationService
 from app.users.models import UserRoleEnum as RoleEnum
 from app.core.response import PaginationMeta, ResponseBase, PaginatedResponse
-from app.medical_records.schemas import MedicalRecordCreate, MedicalRecordUpdate, MedicalRecordResponse
+from app.medical_records.schemas import MedicalRecordCreate, MedicalRecordUpdate, MedicalRecordResponse, SkinImageCreate, SkinImageResponse
 from app.medical_records.services import MedicalRecordService
 
 router = APIRouter(
-    prefix="/medical_records",
-    tags=["medical_records"],
+    prefix="/medical-records",
+    tags=["medical-records"],
     responses={404: {"description": "Not found"}}
 )
 
@@ -187,3 +188,64 @@ def update_medical_record(
 #     if not success:
 #         raise HTTPException(status_code=404, detail="Hồ sơ khám bệnh không tồn tại")
 #     return ResponseBase(message="Xóa hồ sơ khám bệnh thành công", data=None)
+
+
+
+# ============================================================== SKIN IMAGE  ==============================================================
+@router.post("/{record_id}/skin-images", response_model=ResponseBase[SkinImageResponse])
+@protected_route([RoleEnum.ADMIN, RoleEnum.DOCTOR])
+async def upload_skin_image(
+    CREDENTIALS: AuthCredentialDepend,
+    record_id: UUID,
+    image_type: ImageTypeEnum = Form(...),
+    file: UploadFile = File(...),
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """
+    Upload ảnh da mặt bệnh nhân cho phiên khám
+    - Chỉ ADMIN và DOCTOR mới có upload ảnh 
+    - Trả về thông tin ảnh vừa upload
+    """
+    repo = MedicalRecordService(DB)
+    data_in = SkinImageCreate(
+        medical_record_id=record_id,
+        image_type=image_type
+    )
+
+    db_skin_image = await repo.upload_skin_image(data_in, file)
+    return ResponseBase(message="Upload ảnh thành công", data=SkinImageResponse.model_validate(db_skin_image))
+
+@router.get("/{record_id}/skin-images", response_model=ResponseBase[list[SkinImageResponse]])
+def get_skin_images_by_medical_record(
+    # CREDENTIALS: AuthCredentialDepend,
+    record_id: UUID,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    """Lấy danh sách ảnh của phiên khám"""
+    """
+    Lấy danh sách ảnh da của phiên khám
+    - Chỉ ADMIN và DOCTOR có quyền truy cập
+    - Trả về danh sách các ảnh thuộc phiên khám
+    """
+    repo = MedicalRecordService(DB)
+    skin_images = repo.get_skin_images(record_id)
+    return ResponseBase(message="Lấy danh sách ảnh thành công", data=skin_images)
+
+@router.delete("/skin-images/{image_id}", response_model=ResponseBase[None])
+@protected_route([RoleEnum.ADMIN, RoleEnum.DOCTOR])
+async def delete_skin_image(
+    CREDENTIALS: AuthCredentialDepend,
+    image_id: UUID,
+    DB: Session = Depends(get_db),
+    CURRENT_USER=None,
+):
+    """
+    Xóa ảnh da bệnh nhân
+    - Chỉ ADMIN và DOCTOR có quyền xóa
+    - Xóa bản ghi trong DB và file ảnh trên server
+    """
+    repo = MedicalRecordService(DB)
+    await repo.delete_skin_image(image_id)
+    return ResponseBase(message="Xóa ảnh thành công", data=None)
