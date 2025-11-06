@@ -16,6 +16,7 @@ from app.medical_records.endpoints import router as medical_records_router
 from app.prescriptions.endpoints import router as prescriptions_router
 from app.service_indications.endpoints import router as service_indications_router
 from app.invoices.endpoints import router as invoices_router
+from app.reports.endpoints import router as reports_router
 from app.models import *
 
 app = FastAPI(title="Skin Clinic API")  # Tạo app FastAPI với title
@@ -72,6 +73,7 @@ app.include_router(medical_records_router) # Include routes từ medical_records
 app.include_router(prescriptions_router) # Include routes từ prescriptions
 app.include_router(service_indications_router) # Include routes từ service_indications
 app.include_router(invoices_router) # Include routes từ invoices
+app.include_router(reports_router) # Include routes từ reports
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Skin Clinic Backend"}
