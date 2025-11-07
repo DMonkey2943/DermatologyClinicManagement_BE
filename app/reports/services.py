@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
 from datetime import date, datetime, timedelta
 from typing import Tuple, Optional, List, Dict, Any
+from calendar import monthrange
 from app.invoices.models import Invoice
 from app.prescriptions.models import PrescriptionDetail
 from app.medications.models import Medication
@@ -52,6 +53,176 @@ class ReportService:
             return start, end
         # default day
         return ref, ref
+    
+    def revenue_comparison(self, req) -> Dict[str, Any]:
+        """
+        So sánh doanh thu theo các khoảng thời gian
+        """
+        
+        ref_date = req.reference_date or date.today()
+        period_type = req.period_type.lower()
+        
+        data_points = []
+        
+        if period_type == "week":
+            # Tuần bắt đầu từ thứ Hai
+            start = ref_date - timedelta(days=ref_date.weekday())
+            end = start + timedelta(days=6)
+
+            # Tên ngày trong tuần
+            weekdays = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+            
+            # Lấy dữ liệu cho từng ngày trong tuần
+            for i in range(7):
+                day = start + timedelta(days=i)
+                # day_name = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"][i]
+
+                # Định dạng label: dd/mm/yy (weekday)
+                day_label = f"{day.strftime('%d/%m/%y')} ({weekdays[i]})"
+                
+                total = self.db.query(func.coalesce(func.sum(Invoice.final_amount), 0)).filter(
+                    func.date(Invoice.created_at) == day
+                ).scalar() or 0.0
+                
+                medications = self.db.query(func.coalesce(func.sum(Invoice.medication_subtotal), 0)).filter(
+                    func.date(Invoice.created_at) == day
+                ).scalar() or 0.0
+                
+                services = self.db.query(func.coalesce(func.sum(Invoice.service_subtotal), 0)).filter(
+                    func.date(Invoice.created_at) == day
+                ).scalar() or 0.0
+                
+                data_points.append({
+                    "label": day_label,
+                    "date": day,
+                    "total": float(total),
+                    "medications": float(medications),
+                    "services": float(services)
+                })
+        
+        elif period_type == "month":
+            # Lấy tháng hiện tại
+            start = ref_date.replace(day=1)
+            last_day = monthrange(start.year, start.month)[1]
+            end = start.replace(day=last_day)
+            
+            # Lấy dữ liệu cho từng ngày trong tháng
+            for day in range(1, last_day + 1):
+                current_day = start.replace(day=day)
+                
+                total = self.db.query(func.coalesce(func.sum(Invoice.final_amount), 0)).filter(
+                    func.date(Invoice.created_at) == current_day
+                ).scalar() or 0.0
+                
+                medications = self.db.query(func.coalesce(func.sum(Invoice.medication_subtotal), 0)).filter(
+                    func.date(Invoice.created_at) == current_day
+                ).scalar() or 0.0
+                
+                services = self.db.query(func.coalesce(func.sum(Invoice.service_subtotal), 0)).filter(
+                    func.date(Invoice.created_at) == current_day
+                ).scalar() or 0.0
+                
+                data_points.append({
+                    "label": f"Ngày {day}",
+                    "date": current_day,
+                    "total": float(total),
+                    "medications": float(medications),
+                    "services": float(services)
+                })
+        
+        elif period_type == "quarter":
+            # Xác định quý
+            quarter = (ref_date.month - 1) // 3 + 1
+            start_month = (quarter - 1) * 3 + 1
+            start = ref_date.replace(month=start_month, day=1)
+            
+            # Lấy dữ liệu cho từng tuần trong quý (khoảng 13 tuần)
+            week_num = 1
+            current_week_start = start - timedelta(days=start.weekday())
+            
+            for i in range(13):
+                week_start = current_week_start + timedelta(weeks=i)
+                week_end = week_start + timedelta(days=6)
+                
+                # Chỉ lấy tuần nằm trong quý
+                if week_start.month > start_month + 2:
+                    break
+
+                # Định dạng label: Tuần {week_num} (dd/mm-dd/mm/yy)
+                week_label = f"Tuần {week_num} ({week_start.strftime('%d/%m')}-{week_end.strftime('%d/%m/%y')})"
+                
+                total = self.db.query(func.coalesce(func.sum(Invoice.final_amount), 0)).filter(
+                    func.date(Invoice.created_at).between(week_start, week_end)
+                ).scalar() or 0.0
+                
+                medications = self.db.query(func.coalesce(func.sum(Invoice.medication_subtotal), 0)).filter(
+                    func.date(Invoice.created_at).between(week_start, week_end)
+                ).scalar() or 0.0
+                
+                services = self.db.query(func.coalesce(func.sum(Invoice.service_subtotal), 0)).filter(
+                    func.date(Invoice.created_at).between(week_start, week_end)
+                ).scalar() or 0.0
+                
+                data_points.append({
+                    "label": f"Tuần {week_num}",
+                    # "label": week_label,
+                    "date": week_start,
+                    "total": float(total),
+                    "medications": float(medications),
+                    "services": float(services)
+                })
+                week_num += 1
+            
+            end = start.replace(month=start_month + 2)
+            end = end.replace(day=monthrange(end.year, end.month)[1])
+        
+        elif period_type == "year":
+            # Lấy năm hiện tại
+            start = ref_date.replace(month=1, day=1)
+            end = ref_date.replace(month=12, day=31)
+            
+            # Lấy dữ liệu cho từng tháng trong năm
+            month_names = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+                        "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"]
+            
+            for month in range(1, 13):
+                month_start = start.replace(month=month, day=1)
+                month_end = month_start.replace(day=monthrange(start.year, month)[1])
+                
+                total = self.db.query(func.coalesce(func.sum(Invoice.final_amount), 0)).filter(
+                    func.date(Invoice.created_at).between(month_start, month_end)
+                ).scalar() or 0.0
+                
+                medications = self.db.query(func.coalesce(func.sum(Invoice.medication_subtotal), 0)).filter(
+                    func.date(Invoice.created_at).between(month_start, month_end)
+                ).scalar() or 0.0
+                
+                services = self.db.query(func.coalesce(func.sum(Invoice.service_subtotal), 0)).filter(
+                    func.date(Invoice.created_at).between(month_start, month_end)
+                ).scalar() or 0.0
+                
+                data_points.append({
+                    "label": month_names[month - 1],
+                    "date": month_start,
+                    "total": float(total),
+                    "medications": float(medications),
+                    "services": float(services)
+                })
+        
+        # Tính tổng
+        total_revenue = sum(dp["total"] for dp in data_points)
+        total_medications = sum(dp["medications"] for dp in data_points)
+        total_services = sum(dp["services"] for dp in data_points)
+        
+        return {
+            "period_type": period_type,
+            "start_date": start,
+            "end_date": end,
+            "data_points": data_points,
+            "total_revenue": float(total_revenue),
+            "total_medications": float(total_medications),
+            "total_services": float(total_services)
+        }
 
     # ---------------------------
     # Doanh thu tổng
@@ -160,23 +331,23 @@ class ReportService:
         ).scalar() or 0
         attendance_rate = (attended/total) if total>0 else None
         cancel_rate = (cancelled/total) if total>0 else None
-        # avg advance booking (days between created_at and appointment_date)
-        adv_q = self.db.query(func.avg(func.julianday(Appointment.appointment_date) - func.julianday(Appointment.created_at))).filter(
-            func.date(Appointment.appointment_date).between(start, end)
-        ).scalar()
-        avg_advance_days = float(adv_q) if adv_q is not None else None
-        # popular time slot
-        popular = self.db.query(Appointment.time_slot, func.count(Appointment.id)).filter(
-            func.date(Appointment.appointment_date).between(start, end)
-        ).group_by(Appointment.time_slot).order_by(func.count(Appointment.id).desc()).first()
-        popular_slot = popular[0] if popular else None
+        # # avg advance booking (days between created_at and appointment_date)
+        # adv_q = self.db.query(func.avg(func.julianday(Appointment.appointment_date) - func.julianday(Appointment.created_at))).filter(
+        #     func.date(Appointment.appointment_date).between(start, end)
+        # ).scalar()
+        # avg_advance_days = float(adv_q) if adv_q is not None else None
+        # # popular time slot
+        # popular = self.db.query(Appointment.time_slot, func.count(Appointment.id)).filter(
+        #     func.date(Appointment.appointment_date).between(start, end)
+        # ).group_by(Appointment.time_slot).order_by(func.count(Appointment.id).desc()).first()
+        # popular_slot = popular[0] if popular else None
 
         return {
             "counts_by_status": counts,
             "attendance_rate": attendance_rate,
             "cancel_rate": cancel_rate,
-            "avg_advance_days": avg_advance_days,
-            "popular_time_slot": popular_slot
+            # "avg_advance_days": avg_advance_days,
+            # "popular_time_slot": popular_slot
         }
 
     # ---------------------------

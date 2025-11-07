@@ -5,6 +5,7 @@ from app.database import get_db
 from app.core.response import ResponseBase
 from app.reports.schemas import (
     ReportPeriodRequest,
+    RevenueComparisonRequest,
     RevenueReport,
     RevenueBreakdownReport,
     PatientStatsReport,
@@ -20,6 +21,17 @@ router = APIRouter(
     tags=["reports"],
     responses={404: {"description": "Not found"}}
 )
+
+@router.post("/revenue/comparison", response_model=ResponseBase)
+def report_revenue_comparison(
+    CREDENTIALS: AuthCredentialDepend,
+    payload: RevenueComparisonRequest,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    repo = ReportService(DB)
+    data = repo.revenue_comparison(payload)
+    return ResponseBase(message="Báo cáo so sánh doanh thu", data=data)
 
 # Tổng doanh thu
 @router.post("/revenue/total", response_model=ResponseBase)

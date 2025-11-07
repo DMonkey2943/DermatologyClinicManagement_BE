@@ -9,6 +9,26 @@ class ReportPeriodRequest(BaseModel):
     start_date: Optional[date] = None  # explicit range start
     end_date: Optional[date] = None    # explicit range end
 
+class RevenueComparisonRequest(BaseModel):
+    period_type: str  # "week", "month", "quarter", "year"
+    reference_date: date  # ngày tham chiếu để tính khoảng thời gian
+
+class RevenueDataPoint(BaseModel):
+    label: str  # tên của điểm dữ liệu (Thứ 2, Tuần 1, Tháng 1, etc)
+    date: date  # ngày đại diện
+    total: float
+    medications: float
+    services: float
+
+class RevenueComparisonReport(BaseModel):
+    period_type: str
+    start_date: date
+    end_date: date
+    data_points: List[RevenueDataPoint]
+    total_revenue: float
+    total_medications: float
+    total_services: float
+
 # Các schema response đơn giản cho từng báo cáo
 class RevenueReport(BaseModel):
     total: float
@@ -36,8 +56,8 @@ class AppointmentStatsReport(BaseModel):
     counts_by_status: Dict[str, int] = {}
     attendance_rate: Optional[float] = None
     cancel_rate: Optional[float] = None
-    avg_advance_days: Optional[float] = None
-    popular_time_slot: Optional[str] = None
+    # avg_advance_days: Optional[float] = None
+    # popular_time_slot: Optional[str] = None
 
 class DoctorStatsItem(BaseModel):
     doctor_id: str
