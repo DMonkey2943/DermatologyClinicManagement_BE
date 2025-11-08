@@ -76,3 +76,12 @@ class MedicationStatsReport(BaseModel):
 
 class ServiceStatsReport(BaseModel):
     top_services: List[BreakdownItem] = []
+
+class PatientRecordItem(BaseModel):
+    patient_id: str
+    patient_name: str
+    record_count: int
+
+class MedicalRecordStatsReport(BaseModel):
+    total_medical_records: int
+    top_patients: List[PatientRecordItem] = []

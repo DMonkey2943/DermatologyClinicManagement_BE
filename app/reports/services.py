@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from typing import Tuple, Optional, List, Dict, Any
 from calendar import monthrange
 from app.invoices.models import Invoice
-from app.prescriptions.models import PrescriptionDetail
+from app.prescriptions.models import Prescription, PrescriptionDetail
 from app.medications.models import Medication
 from app.patients.models import Patient
 from app.appointments.models import Appointment
@@ -408,13 +408,19 @@ class ReportService:
     # ---------------------------
     def medication_stats(self, req: ReportPeriodRequest) -> Dict[str, Any]:
         start, end = self._resolve_period(req)
-        # Top thuốc được kê đơn nhiều nhất (dựa trên PrescriptionDetail.quantity)
         top = self.db.query(
             PrescriptionDetail.medication_id,
+            Medication.name,
             func.coalesce(func.sum(PrescriptionDetail.quantity), 0).label("qty")
-        ).join(Medication, PrescriptionDetail.medication_id == Medication.id).group_by(PrescriptionDetail.medication_id).order_by(func.sum(PrescriptionDetail.quantity).desc()).limit(20).all()
+        ).join(
+            Medication, PrescriptionDetail.medication_id == Medication.id
+        ).join(
+            Prescription, PrescriptionDetail.prescription_id == Prescription.id).filter(
+            func.date(Prescription.created_at).between(start, end)
+        ).group_by(PrescriptionDetail.medication_id, Medication.name
+        ).order_by(func.sum(PrescriptionDetail.quantity).desc()).limit(5).all()
 
-        top_list = [{"key": str(row[0]), "value": int(row[1])} for row in top]
+        top_list = [{"key": str(row[0]), "name": str(row[1]), "value": int(row[2])} for row in top]
 
         # Giá trị tồn kho hiện tại = sum(price * stock_quantity)
         inv_q = self.db.query(func.coalesce(func.sum(func.coalesce(Medication.price,0)*func.coalesce(Medication.stock_quantity,0)), 0)).scalar() or 0.0
@@ -448,13 +454,68 @@ class ReportService:
     def service_stats(self, req: ReportPeriodRequest) -> Dict[str, Any]:
         start, end = self._resolve_period(req)
         from app.services.models import Service
-        from app.service_indications.models import ServiceIndicationDetail
+        from app.service_indications.models import ServiceIndicationDetail, ServiceIndication
         top = self.db.query(
             ServiceIndicationDetail.service_id,
             func.coalesce(func.sum(ServiceIndicationDetail.quantity), 0).label("qty")
-        ).group_by(ServiceIndicationDetail.service_id).order_by(func.sum(ServiceIndicationDetail.quantity).desc()).limit(20).all()
+        ).join(
+            ServiceIndication, ServiceIndicationDetail.service_indication_id == ServiceIndication.id).filter(
+            func.date(ServiceIndication.created_at).between(start, end)
+        ).group_by(ServiceIndicationDetail.service_id).order_by(func.sum(ServiceIndicationDetail.quantity).desc()).limit(5).all()
         top_list = []
         for row in top:
             svc = self.db.query(Service).filter(Service.id == row[0]).first()
             top_list.append({"key": getattr(svc, "name", str(row[0])), "value": int(row[1])})
         return {"top_services": top_list}
+    
+    # ---------------------------
+    # Thống kê phiên khám
+    # ---------------------------
+    def medical_record_stats(self, req: ReportPeriodRequest) -> Dict[str, Any]:
+        start, end = self._resolve_period(req)
+        from app.medical_records.models import MedicalRecord
+        from app.patients.models import Patient
+        # Tổng số phiên khám trong khoảng thời gian
+        total_medical_records = self.db.query(func.count(MedicalRecord.id)).filter(
+            func.date(MedicalRecord.created_at).between(start, end)
+        ).scalar() or 0
+
+        # Top 5 bệnh nhân có số phiên khám nhiều nhất
+        top_patients = self.db.query(
+            MedicalRecord.patient_id,
+            Patient.full_name,
+            func.count(MedicalRecord.id).label("record_count")
+        ).join(Patient, MedicalRecord.patient_id == Patient.id).filter(
+            func.date(MedicalRecord.created_at).between(start, end)
+        ).group_by(MedicalRecord.patient_id, Patient.full_name).order_by(
+            func.count(MedicalRecord.id).desc()
+        ).limit(5).all()
+
+        # Chuyển đổi dữ liệu thành danh sách dict
+        top_patients_list = [
+            {
+                "patient_id": str(row[0]),
+                "patient_name": row[1] or "Không có tên",
+                "record_count": int(row[2])
+            }
+            for row in top_patients
+        ]
+
+        # Số phiên khám theo bệnh nhân
+        # patient_records = self.db.query(
+        #     MedicalRecord.patient_id,
+        #     func.count(MedicalRecord.id).label("record_count")
+        # ).filter(
+        #     func.date(MedicalRecord.created_at).between(start, end)
+        # ).group_by(MedicalRecord.patient_id).all()
+
+        # # Chuyển đổi dữ liệu thành danh sách dict
+        # patient_records_list = [
+        #     {"patient_id": str(row[0]), "record_count": int(row[1])}
+        #     for row in patient_records
+        # ]
+
+        return {
+            "total_medical_records": int(total_medical_records),
+            "top_patients": top_patients_list
+        }

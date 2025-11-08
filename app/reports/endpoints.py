@@ -6,13 +6,6 @@ from app.core.response import ResponseBase
 from app.reports.schemas import (
     ReportPeriodRequest,
     RevenueComparisonRequest,
-    RevenueReport,
-    RevenueBreakdownReport,
-    PatientStatsReport,
-    AppointmentStatsReport,
-    DoctorStatsReport,
-    MedicationStatsReport,
-    ServiceStatsReport,
 )
 from app.reports.services import ReportService
 
@@ -128,3 +121,15 @@ def report_services(
     repo = ReportService(DB)
     data = repo.service_stats(payload)
     return ResponseBase(message="Báo cáo thống kê dịch vụ", data=data)
+
+# Thống kê phiên khám
+@router.post("/medical-records", response_model=ResponseBase)
+def report_medical_records(
+    CREDENTIALS: AuthCredentialDepend,
+    payload: ReportPeriodRequest,
+    DB: Session = Depends(get_db),
+    CURRENT_USER = None,
+):
+    repo = ReportService(DB)
+    data = repo.medical_record_stats(payload)
+    return ResponseBase(message="Báo cáo thống kê phiên khám", data=data)
