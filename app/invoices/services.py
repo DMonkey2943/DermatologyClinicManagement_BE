@@ -37,7 +37,8 @@ class InvoiceService:
 
             # Lấy prescription liên quan tới medical_record để trừ stock
             prescription = self.prescription_service.get_prescription_by_medical_record_id(invoice_in.medical_record_id)
-            if prescription and getattr(prescription, "medications", None):
+            # Chỉ xử lý trừ kho nếu tồn tại prescription và có danh sách medications
+            if prescription and hasattr(prescription, "medications") and prescription.medications:
                 for detail in prescription.medications:
                     med = self.medication_service.get_medication_by_id(detail.medication_id)
                     if not med:
@@ -80,12 +81,18 @@ class InvoiceService:
     def get_invoice_by_id(self, invoice_id: UUID) -> Optional[Invoice]:
         """Lấy Invoice theo ID"""
         invoice = self.db.query(Invoice).filter(Invoice.id == invoice_id).first()
+        if not invoice:
+            return None  # Hoặc raise HTTPException nếu muốn báo lỗi 404
         patient = self.patient_service.get_patient_by_id(invoice.patient_id)
         doctor = self.user_service.get_user_by_id(invoice.doctor_id)
         created_by = self.user_service.get_user_by_id(invoice.created_by)
         medical_record_info = self.medical_record_service.get_medical_record_by_id(invoice.medical_record_id)
         prescription = self.prescription_service.get_prescription_by_medical_record_id(invoice.medical_record_id)
         service_indication = self.service_indication_service.get_service_indication_by_medical_record_id(invoice.medical_record_id)
+        
+        medications = prescription.medications if prescription and hasattr(prescription, "medications") else None
+        services = service_indication.services if service_indication and hasattr(service_indication, "services") else None
+        
         full_invoice = InvoiceFullResponse(
             id = invoice.id,
             medical_record_id = invoice.medical_record_id,
@@ -103,8 +110,8 @@ class InvoiceService:
             doctor=doctor,
             created_by_user=created_by,
             diagnosis = medical_record_info.diagnosis,
-            medications = prescription.medications,
-            services = service_indication.services,
+            medications = medications,
+            services = services,
         )
         return full_invoice
     

@@ -14,7 +14,7 @@ def validate_appointment_time(value: time) -> time:
     weekday_morning_start = time(11, 0)  # 11:00
     weekday_morning_end = time(13, 0)    # 13:00
     weekday_evening_start = time(17, 0)  # 17:00
-    weekday_evening_end = time(20, 0)    # 20:00
+    weekday_evening_end = time(21, 0)    # 20:00
     if not (
         (weekday_morning_start <= value <= weekday_morning_end) or
         (weekday_evening_start <= value <= weekday_evening_end)

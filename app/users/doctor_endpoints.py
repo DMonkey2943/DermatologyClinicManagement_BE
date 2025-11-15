@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 from app.core.dependencies import AuthCredentialDepend
 from app.database import get_db
-from app.users.schemas import UserCreate, UserUpdate, DoctorUpdate, DoctorResponse, DoctorCombinedCreate, DoctorCombinedUpdate
+from app.users.schemas import UserCreate, UserResponse, UserUpdate, DoctorUpdate, DoctorResponse, DoctorCombinedCreate, DoctorCombinedUpdate
 from app.users.services import UserService, DoctorService
 from app.core.authentication import protected_route
 from app.users.models import UserRoleEnum as RoleEnum
@@ -69,8 +69,29 @@ def read_doctor(
     return ResponseBase(message="Doctor retrieved successfully", data=db_doctor)
 
 
-@router.get("/", response_model=PaginatedResponse[DoctorResponse])
-@protected_route([RoleEnum.ADMIN])
+# @router.get("/", response_model=PaginatedResponse[DoctorResponse])
+# @protected_route([RoleEnum.ADMIN])
+# def read_doctors(
+#     CREDENTIALS: AuthCredentialDepend,
+#     skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),
+#     limit: int = Query(100, ge=1, le=100, description="Số bản ghi tối đa"),
+#     DB: Session = Depends(get_db),
+#     CURRENT_USER = None,
+# ):
+#     """
+#     Lấy danh sách bác sĩ với phân trang
+#     - Bao gồm thông tin User liên kết
+#     """
+#     repo = DoctorService(DB)
+#     doctors = repo.get_doctors(skip=skip, limit=limit)
+#     total = repo.count_doctors()
+#     page = (skip // limit) + 1
+#     total_pages = (total // limit) + (1 if total % limit else 0)
+#     meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)
+#     return PaginatedResponse(message="Doctors retrieved successfully", data=doctors, meta=meta)
+
+@router.get("/", response_model=PaginatedResponse[UserResponse])
+# @protected_route([RoleEnum.ADMIN])
 def read_doctors(
     CREDENTIALS: AuthCredentialDepend,
     skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),

@@ -4,7 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 import bcrypt
-from app.users.models import User, Doctor
+from app.users.models import User, Doctor, UserRoleEnum
 from app.users.schemas import UserCreate, UserUpdate, UserTokenData, UserResponse, DoctorCombinedCreate, DoctorCombinedUpdate, DoctorResponse
 from fastapi import HTTPException, UploadFile, status
 from app.core.response import ErrorResponse
@@ -309,23 +309,33 @@ class DoctorService:
 
     def get_doctors(self, skip: int = 0, limit: int = 10) -> list[Doctor]:
         """Lấy danh sách bác sĩ với phân trang"""
-        doctors = self.db.query(Doctor).offset(skip).limit(limit).all()
-        result = []
-        for doctor in doctors:
-            user = self.user_service.get_user_by_id(doctor.user_id)
-            if user:
-                doctor_response = DoctorResponse(
-                    id=doctor.id,
-                    user_id=doctor.user_id,
-                    specialization=doctor.specialization,
-                    user=UserResponse.from_orm(user)
-                )
-                result.append(doctor_response)
-        return result
+        # doctors = self.db.query(Doctor).offset(skip).limit(limit).all()
+        # result = []
+        # for doctor in doctors:
+        #     user = self.user_service.get_user_by_id(doctor.user_id)
+        #     if user:
+        #         doctor_response = DoctorResponse(
+        #             id=doctor.id,
+        #             user_id=doctor.user_id,
+        #             specialization=doctor.specialization,
+        #             user=UserResponse.from_orm(user)
+        #         )
+        #         result.append(doctor_response)
+        # return result
+        doctors = self.db.query(User).filter(and_(
+            User.role==UserRoleEnum.DOCTOR, 
+            User.deleted_at.is_(None)
+            )).offset(skip).limit(limit).all()
+        return doctors
+
 
     def count_doctors(self) -> int:
         """Đếm tổng số bác sĩ"""
-        return self.db.query(Doctor).filter(Doctor.deleted_at.is_(None)).count()
+        # return self.db.query(Doctor).filter(Doctor.deleted_at.is_(None)).count()
+        return self.db.query(User).filter(and_(
+            User.role==UserRoleEnum.DOCTOR, 
+            User.deleted_at.is_(None)
+            )).count()
 
     def update_doctor(self, doctor_id: UUID, doctor_update: DoctorCombinedUpdate) -> Optional[DoctorResponse]:
         """Cập nhật thông tin bác sĩ (bao gồm cả User) từ schema gộp"""

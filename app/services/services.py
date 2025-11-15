@@ -31,7 +31,7 @@ class ServiceService:
             query = query.filter(
                 Service.name.ilike(term)
             )
-        services = query.offset(skip).limit(limit).all()
+        services = query.order_by(Service.name.asc()).offset(skip).limit(limit).all()
         return services
 
     def count_services(self, q: Optional[str] = None) -> int:

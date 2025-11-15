@@ -105,7 +105,7 @@ def read_appointments(
     return PaginatedResponse(message="Lấy danh sách lịch hẹn thành công", data=appointments, meta=meta)
 
 @router.put("/{appointment_id}", response_model=ResponseBase[AppointmentResponse])
-@protected_route([RoleEnum.ADMIN, RoleEnum.STAFF])
+# @protected_route([RoleEnum.ADMIN, RoleEnum.STAFF])
 def update_appointment(
     CREDENTIALS: AuthCredentialDepend,
     appointment_id: UUID,

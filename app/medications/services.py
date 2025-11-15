@@ -31,7 +31,7 @@ class MedicationService:
             query = query.filter(
                 Medication.name.ilike(term)
             )
-        medications = query.offset(skip).limit(limit).all()
+        medications = query.order_by(Medication.name.asc()).offset(skip).limit(limit).all()
         return medications
 
     def count_medications(self, q: Optional[str] = None) -> int:

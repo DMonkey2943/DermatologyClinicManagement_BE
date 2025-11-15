@@ -19,3 +19,5 @@ create_admin.py
 *.json
 /*.py
 .git-credentials
+
+static/*

@@ -43,7 +43,7 @@ class PatientService:
                 )
             )
 
-        patients = query.offset(skip).limit(limit).all()
+        patients = query.order_by(Patient.created_at.desc()).offset(skip).limit(limit).all()
         return patients
     
     def search_patients(self, search_term: str, skip: int = 0, limit: int = 100) -> List[Patient]:
