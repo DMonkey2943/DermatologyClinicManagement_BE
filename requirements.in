@@ -17,3 +17,5 @@ bcrypt
 PyJWT
 python-multipart
 pillow
+torch 
+torchvision

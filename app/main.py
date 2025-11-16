@@ -17,6 +17,7 @@ from app.prescriptions.endpoints import router as prescriptions_router
 from app.service_indications.endpoints import router as service_indications_router
 from app.invoices.endpoints import router as invoices_router
 from app.reports.endpoints import router as reports_router
+from app.acne_severity_grading.endpoints import router as acne_severity_grading_router
 from app.models import *
 
 app = FastAPI(title="Skin Clinic API")  # Tạo app FastAPI với title
@@ -62,6 +63,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 # Include các router
+app.include_router(acne_severity_grading_router)     # Include routes từ acne_severity_grading_router
 app.include_router(auth_router)     # Include routes từ auth
 app.include_router(users_router)    # Include routes từ users
 app.include_router(doctors_router)    # Include routes từ doctors
