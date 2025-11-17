@@ -22,7 +22,10 @@ class Patient(Base):
     full_name = Column(String, nullable=False)        # Họ tên bệnh nhân
     dob = Column(Date)                                # Ngày sinh
     gender = Column(Enum(GenderEnum))                 # Giới tính
+
+    # Thông tin tài khoản
     phone_number = Column(String, nullable=False)     # Số điện thoại
+    password = Column(String)                         # Mật khẩu đã hash
     
     # Thông tin liên lạc và địa chỉ
     email = Column(String)                            # Email
