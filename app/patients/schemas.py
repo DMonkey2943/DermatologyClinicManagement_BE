@@ -25,6 +25,7 @@ class PatientBase(BaseSchema):
     dob: Optional[date] = None              # Ngày sinh
     gender: Optional[GenderEnum] = None     # Giới tính
     phone_number: str                       # Số điện thoại (bắt buộc)
+    password: Optional[str] = None          # Mật khẩu
     email: Optional[EmailStr] = None        # Email (không bắt buộc)
     address: Optional[str] = Field(max_length=250, default=None)           # Địa chỉ
     medical_history: Optional[str] = Field(max_length=250, default=None)   # Tiền sử bệnh lý
@@ -41,6 +42,7 @@ class PatientBase(BaseSchema):
 
 class PatientCreate(PatientBase):
     """Schema tạo Patient mới"""
+    # pass
     @field_validator("dob")
     @classmethod
     def _check_dob(cls, v):
@@ -52,6 +54,7 @@ class PatientUpdate(BaseSchema):
     dob: Optional[date] = None
     gender: Optional[GenderEnum] = None
     phone_number: Optional[str] = None
+    password: Optional[str] = None
     email: Optional[EmailStr] = None
     address: Optional[str] = Field(max_length=250, default=None)
     medical_history: Optional[str] = Field(max_length=250, default=None)
@@ -65,10 +68,10 @@ class PatientUpdate(BaseSchema):
     def _check_phone(cls, v):
         return validate_phone_number(v)
     
-    # @field_validator("dob")
-    # @classmethod
-    # def _check_dob(cls, v):
-    #     return validate_valid_dob(v)
+    @field_validator("dob")
+    @classmethod
+    def _check_dob(cls, v):
+        return validate_valid_dob(v)
 
 class PatientResponse(BaseSchema):
     """Schema trả về thông tin Patient"""
@@ -77,6 +80,7 @@ class PatientResponse(BaseSchema):
     dob: Optional[date] = None              # Ngày sinh
     gender: Optional[GenderEnum] = None     # Giới tính
     phone_number: str                       # Số điện thoại (bắt buộc)
+    password: Optional[str] = None          # Mật khẩu tài khoản
     email: Optional[EmailStr] = None        # Email (không bắt buộc)
     address: Optional[str]                  # Địa chỉ
     medical_history: Optional[str]          # Tiền sử bệnh lý
@@ -91,3 +95,31 @@ class PatientForeignKeyResponse(BaseSchema):
     """Schema trả về thông tin Patient trong các quan hệ Foreign Key"""
     id: UUID
     full_name: str
+
+class PatientLogin(BaseSchema):
+    phone_number: str
+    password: str
+
+    @field_validator("phone_number")
+    @classmethod
+    def _check_phone(cls, v):
+        return validate_phone_number(v)
+
+    # @field_validator("password")
+    # @classmethod
+    # def _check_password(cls, v):
+    #     return validate_password(v)
+
+class RefreshTokenData(BaseSchema):
+    refresh_token: str
+
+class PatientTokenData(BaseSchema):
+    """Schema cho dữ liệu trong token"""
+    id: UUID
+    full_name: Optional[str] = None
+    phone_number: str
+
+class LoginResponseData(BaseSchema):
+    patient: PatientTokenData
+    access_token: str
+    refresh_token: str
