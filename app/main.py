@@ -5,6 +5,7 @@ from app.core.response import ErrorResponse
 from fastapi.exceptions import RequestValidationError
 from app.core.validation_handler import validation_handler_errors_out
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.users.endpoints import router as users_router
 from app.users.doctor_endpoints import router as doctors_router
 from app.auth.endpoints import router as auth_router
@@ -18,6 +19,10 @@ from app.service_indications.endpoints import router as service_indications_rout
 from app.invoices.endpoints import router as invoices_router
 from app.reports.endpoints import router as reports_router
 from app.acne_severity_grading.endpoints import router as acne_severity_grading_router
+
+from app.auth.patients.endpoints import router as patient_auth_router
+from app.appointments.patient_endpoints import router as patient_appointments_router
+
 from app.models import *
 
 app = FastAPI(title="Skin Clinic API")  # Tạo app FastAPI với title
@@ -62,7 +67,7 @@ async def general_exception_handler(request: Request, exc: Exception):
         content=ErrorResponse(message="Internal server error", details=str(exc)).model_dump()
     )
 
-# Include các router
+# Include các router của user
 app.include_router(acne_severity_grading_router)     # Include routes từ acne_severity_grading_router
 app.include_router(auth_router)     # Include routes từ auth
 app.include_router(users_router)    # Include routes từ users
@@ -76,6 +81,11 @@ app.include_router(prescriptions_router) # Include routes từ prescriptions
 app.include_router(service_indications_router) # Include routes từ service_indications
 app.include_router(invoices_router) # Include routes từ invoices
 app.include_router(reports_router) # Include routes từ reports
+
+# Include các router của patient
+app.include_router(patient_auth_router) # Include routes từ auth
+app.include_router(patient_appointments_router) # Include routes từ auth
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Skin Clinic Backend"}

@@ -99,3 +99,17 @@ class AppointmentResponse(BaseSchema):
     patient: Optional[PatientForeignKeyResponse] = None    # Thông tin bệnh nhân
     doctor: Optional[UserForeignKeyResponse] = None        # Thông tin bác sĩ
     # created_by: Optional[UserResponse] = None # Thông tin người tạo lịch hẹn
+
+
+
+# FOR PATIENT
+class PatientAppointmentCreate(BaseSchema):
+    """Schema tạo Appointment mới"""
+    # patient_id: Optional[UUID]                        # ID bệnh nhân (bắt buộc)
+    doctor_id: UUID                         # ID bác sĩ (bắt buộc)
+    appointment_date: date                  # Ngày hẹn (bắt buộc)
+    appointment_time: time                  # Giờ hẹn (bắt buộc)
+    time_slot: str = Field(max_length=100, default="30 phút")                          # Khung giờ (bắt buộc)
+    status: AppointmentStatusEnum           # Trạng thái (bắt buộc)
+    # notes: Optional[str] = Field(max_length=250, default=None)             # Ghi chú
+    created_by: UUID                        # ID người tạo lịch hẹn
