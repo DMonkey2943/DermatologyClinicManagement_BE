@@ -1,11 +1,13 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_
 from app.medical_records.models import MedicalRecord, SkinImage
-from app.medical_records.schemas import MedicalRecordCreate, MedicalRecordUpdate, MedicalRecordResponse, SkinImageCreate, SkinImageResponse
+from app.medical_records.schemas import MedicalRecordCreate, MedicalRecordDetailResponse, MedicalRecordUpdate, MedicalRecordResponse, SkinImageCreate, SkinImageResponse
 from uuid import UUID
 from typing import List, Optional
 from datetime import datetime
 from fastapi import HTTPException, UploadFile, status
+from app.prescriptions.models import Prescription, PrescriptionDetail
+from app.service_indications.models import ServiceIndication, ServiceIndicationDetail
 from app.users.services import UserService
 from app.patients.services import PatientService
 from app.utils.skin_image_handler import skin_image_handler
@@ -131,6 +133,56 @@ class MedicalRecordService:
     #     self.db.delete(db_record)
     #     self.db.commit()
     #     return True
+
+    def get_medical_record_detail_of_patient(
+        self,
+        record_id: UUID,
+        current_patient_id: UUID
+    ) -> Optional[MedicalRecordDetailResponse]:
+        """
+        Lấy chi tiết hồ sơ y tế của bệnh nhân theo ID
+        Chỉ cho phép bệnh nhân xem hồ sơ của chính mình
+        """
+        record = (
+            self.db.query(MedicalRecord)
+            .options(
+                # Load thông tin patient và doctor (nếu cần hiển thị)
+                joinedload(MedicalRecord.patient),
+                joinedload(MedicalRecord.doctor),
+                
+                # Load danh sách ảnh da
+                selectinload(MedicalRecord.skin_images),
+                
+                # Load toàn bộ đơn thuốc + chi tiết thuốc
+                selectinload(MedicalRecord.prescriptions).selectinload(
+                    Prescription.prescription_details
+                ).selectinload(PrescriptionDetail.medication),
+                
+                # Load toàn bộ phiếu chỉ định dịch vụ + chi tiết dịch vụ
+                selectinload(MedicalRecord.service_indications).selectinload(
+                    ServiceIndication.service_indication_details
+                ).selectinload(ServiceIndicationDetail.service),
+
+                # Load danh sách hóa đơn 
+                selectinload(MedicalRecord.invoices),
+            )
+            .filter(
+                MedicalRecord.id == record_id,
+                MedicalRecord.patient_id == current_patient_id  # Quan trọng: chỉ cho phép xem hồ sơ của mình
+            )
+            .first()
+        )
+
+        if not record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Hồ sơ khám bệnh không tồn tại hoặc bạn không có quyền truy cập"
+            )
+
+        # Chuyển đổi thành response schema (Pydantic sẽ tự handle nếu trả về model SQLAlchemy có relationship)
+        # Với SQLAlchemy 2.0 + Pydantic v2, có thể trả trực tiếp nếu config đúng
+        return record
+
 
     async def upload_skin_image(self, data_in: SkinImageCreate, skin_image: UploadFile) -> SkinImage:
         """

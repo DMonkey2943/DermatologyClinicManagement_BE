@@ -1,14 +1,17 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 import enum
 
 # Import các enum từ models
+from app.invoices.schemas import InvoiceForeignKeyResponse, InvoiceResponse
 from app.medical_records.models import MedicalRecordStatusEnum, ImageTypeEnum
 
 # Import các response từ schemas khác
 from app.patients.schemas import PatientForeignKeyResponse
+from app.prescriptions.schemas import PrescriptionFullResponse
+from app.service_indications.schemas import ServiceIndicationFullResponse
 from app.users.schemas import UserForeignKeyResponse
 
 class BaseSchema(BaseModel):
@@ -69,3 +72,16 @@ class SkinImageResponse(SkinImageBase):
     id: UUID
     created_at: datetime
     image_path: str                         # Đường dẫn hình ảnh
+
+    
+
+class MedicalRecordDetailResponse(MedicalRecordBase):
+    """Schema trả về thông tin Medical Record"""
+    id: UUID
+    created_at: datetime
+    patient: Optional[PatientForeignKeyResponse] = None
+    doctor: Optional[UserForeignKeyResponse] = None
+    skin_images: Optional[List[SkinImageResponse]] = None
+    prescriptions: Optional[List[PrescriptionFullResponse]] = None
+    service_indications: Optional[List[ServiceIndicationFullResponse]] = None
+    invoices: Optional[List[InvoiceForeignKeyResponse]] = None

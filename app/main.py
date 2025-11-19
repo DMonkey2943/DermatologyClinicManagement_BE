@@ -22,6 +22,7 @@ from app.acne_severity_grading.endpoints import router as acne_severity_grading_
 
 from app.auth.patients.endpoints import router as patient_auth_router
 from app.appointments.patient_endpoints import router as patient_appointments_router
+from app.medical_records.patient_endpoints import router as patient_medical_records_router
 
 from app.models import *
 
@@ -84,7 +85,8 @@ app.include_router(reports_router) # Include routes từ reports
 
 # Include các router của patient
 app.include_router(patient_auth_router) # Include routes từ auth
-app.include_router(patient_appointments_router) # Include routes từ auth
+app.include_router(patient_appointments_router) # Include routes từ appointments
+app.include_router(patient_medical_records_router) # Include routes từ medical_records
 
 @app.get("/")
 def read_root():

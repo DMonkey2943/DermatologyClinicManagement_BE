@@ -73,6 +73,10 @@ class InvoiceFullResponse(InvoiceResponse):
     services: Optional[List[ServiceIndicationDetailResponse]] = None
     diagnosis: Optional[str] = None
 
+class InvoiceForeignKeyResponse(InvoiceBase):
+    """Schema trả về thông tin Invoice"""
+    id: UUID
+    created_at: datetime
 
 
 # ================================ SERVICE INVOICE DETAIL SCHEMAS ================================
