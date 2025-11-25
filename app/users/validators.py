@@ -36,6 +36,7 @@ def validate_valid_dob(value: Any) -> Any:
     today = date.today()
     if value > today:
         raise ValueError("Ngày sinh không hợp lệ")
+    return value
 
 
 

@@ -110,6 +110,6 @@ class PatientAppointmentCreate(BaseSchema):
     appointment_date: date                  # Ngày hẹn (bắt buộc)
     appointment_time: time                  # Giờ hẹn (bắt buộc)
     time_slot: str = Field(max_length=100, default="30 phút")                          # Khung giờ (bắt buộc)
-    status: AppointmentStatusEnum           # Trạng thái (bắt buộc)
+    # status: AppointmentStatusEnum           # Trạng thái (bắt buộc)
     # notes: Optional[str] = Field(max_length=250, default=None)             # Ghi chú
     created_by: UUID                        # ID người tạo lịch hẹn
