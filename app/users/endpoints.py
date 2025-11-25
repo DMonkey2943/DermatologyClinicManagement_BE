@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, BackgroundTasks
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -27,6 +27,7 @@ router = APIRouter(
 @router.post("/", response_model=ResponseBase[UserResponse], status_code=status.HTTP_201_CREATED)
 def create_user(
     CREDENTIALS: AuthCredentialDepend,
+    background_tasks: BackgroundTasks,
     user: UserCreate,                   # Request body sử dụng schema UserCreate
     DB: Session = Depends(get_db),       # Dependency injection cho database
     CURRENT_USER = None,
@@ -51,12 +52,13 @@ def create_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username đã được sử dụng"
         )
-    db_user = repo.create_user(user)
+    db_user = repo.create_user(user, background_tasks)
     return ResponseBase(message="User created successfully", data=db_user)
 
 @router.post("/avatar", response_model=ResponseBase, status_code=status.HTTP_201_CREATED)
 async def create_user_with_avatar(
     CREDENTIALS: AuthCredentialDepend,
+    background_tasks: BackgroundTasks,
     # Form data thay vì JSON body
     username: str = Form(..., min_length=4, max_length=50, pattern=r'^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$'),
     full_name: str = Form(..., min_length=2, max_length=50),
@@ -116,7 +118,7 @@ async def create_user_with_avatar(
     )
     
     # Tạo user trong database
-    db_user = await repo.create_user_with_avatar(user_data, avatar)
+    db_user = await repo.create_user_with_avatar(user_data, background_tasks, avatar)
     
     return ResponseBase(
         message="Tạo user thành công",

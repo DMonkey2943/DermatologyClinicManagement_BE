@@ -9,6 +9,8 @@ from app.users.schemas import UserCreate, UserUpdate, UserTokenData, UserRespons
 from fastapi import HTTPException, UploadFile, status
 from app.core.response import ErrorResponse
 from app.utils.file_handler import file_handler
+from app.utils.email import send_email_async
+from fastapi import BackgroundTasks  # Để chạy async task trong sync context nếu cần
 
 class UserService:
     """Service class để xử lý logic liên quan đến User"""
@@ -43,7 +45,7 @@ class UserService:
             
         return UserTokenData.model_validate(user)
 
-    def create_user(self, user_in: UserCreate) -> User:
+    async def create_user(self, user_in: UserCreate, background_tasks: BackgroundTasks) -> User:
         """Tạo user mới"""
         # Hash password trước khi lưu
         hashed_password = self.get_password_hash(user_in.password)
@@ -65,9 +67,28 @@ class UserService:
         self.db.add(db_user)
         self.db.commit()           # Commit transaction
         self.db.refresh(db_user)   # Refresh để lấy ID và timestamp
+
+        # Gửi email async qua background task
+        subject = "[FORSKIN] THÔNG TIN TÀI KHOẢN HỆ THỐNG QUẢN LÝ PHÒNG KHÁM DA LIỄU"
+        body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h3>Xin chào {db_user.full_name},</h3>
+                <p>Tài khoản của bạn đã được tạo thành công trên hệ thống quản lý phòng khám.</p>
+                <div style="background:#f4f4f4; padding:15px; border-radius:8px; margin:20px 0;">
+                    <p><strong>Tên đăng nhập:</strong> {db_user.username}</p>
+                    {f'<p><strong>Mật khẩu tạm:</strong> {user_in.password}</p>' if user_in.password else ''}
+                </div>
+                <p>Vui lòng đổi ngay sau khi đăng nhập!</p>
+                <p><a href="http://localhost:3000/signin" style="color:#0066cc;">Đăng nhập ngay</a></p>
+            </body>
+        </html>
+        """
+        background_tasks.add_task(send_email_async, db_user.email, subject, body)
+
         return db_user
     
-    async def create_user_with_avatar(self, user_in: UserCreate, avatar: Optional[UploadFile] = None) -> User:
+    async def create_user_with_avatar(self, user_in: UserCreate, background_tasks: BackgroundTasks, avatar: Optional[UploadFile] = None) -> User:
         """
         Tạo user mới kèm avatar
         - Upload avatar nếu có
@@ -102,6 +123,25 @@ class UserService:
         self.db.add(db_user)
         self.db.commit()           # Commit transaction
         self.db.refresh(db_user)   # Refresh để lấy ID và timestamp
+
+        # Gửi email async qua background task
+        subject = "Chào mừng bạn đến với hệ thống quản lý phòng khám da liễu ForSkin"
+        body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h3>Xin chào {db_user.full_name},</h3>
+                <p>Tài khoản của bạn đã được tạo thành công trên hệ thống quản lý phòng khám.</p>
+                <div style="background:#f4f4f4; padding:15px; border-radius:8px; margin:20px 0;">
+                    <p><strong>Tên đăng nhập:</strong> {db_user.username}</p>
+                    {f'<p><strong>Mật khẩu tạm:</strong> {user_in.password}</p>' if user_in.password else ''}
+                </div>
+                <p>Vui lòng đổi ngay sau khi đăng nhập!</p>
+                <p><a href="http://localhost:3000/signin" style="color:#0066cc;">Đăng nhập ngay</a></p>
+            </body>
+        </html>
+        """
+        background_tasks.add_task(send_email_async, db_user.email, subject, body)
+
         return db_user
 
     # @staticmethod
