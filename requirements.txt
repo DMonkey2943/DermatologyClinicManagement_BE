@@ -4,6 +4,8 @@
 #
 #    pip-compile requirements.in
 #
+aiosmtplib==5.0.0
+    # via -r requirements.in
 alembic==1.16.4
     # via -r requirements.in
 annotated-types==0.7.0

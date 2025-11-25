@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     algorithm: str = Field(default="HS256", env="ALGORITHM")
     access_token_expire_minutes: int = Field(default=60, env="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=30, env="REFRESH_TOKEN_EXPIRE_DAYS")
+
+    # Email configuration
+    email_host: str = Field(..., env="EMAIL_HOST")
+    email_port: int = Field(..., env="EMAIL_PORT")
+    email_username: str = Field(..., env="EMAIL_USERNAME")
+    email_password: str = Field(..., env="EMAIL_PASSWORD")
+    email_from: str = Field(..., env="EMAIL_FROM")
     
     # App configuration
     app_name: str = Field(default="Acne Clinic API", env="APP_NAME")
