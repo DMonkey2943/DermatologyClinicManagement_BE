@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
@@ -16,6 +16,7 @@ router = APIRouter(
 
 @router.post("/", response_model=ResponseBase[PatientResponse], status_code=status.HTTP_201_CREATED)
 def create_patient(
+    background_tasks: BackgroundTasks,
     patient: PatientCreate,                   # Request body sử dụng schema UserCreate
     db: Session = Depends(get_db)       # Dependency injection cho database
 ):
@@ -26,7 +27,7 @@ def create_patient(
     """
 
     repo = PatientService(db)  # Tạo repository instance
-    db_patient = repo.create_patient(patient)
+    db_patient = repo.create_patient(patient, background_tasks)
     return ResponseBase(message="Thêm bệnh nhân mới thành công", data=db_patient)  # Wrap response
 
 
@@ -37,35 +38,6 @@ def read_patient(patient_id: UUID, db: Session = Depends(get_db)):
     if db_patient is None:
         raise HTTPException(status_code=404, detail="Patient not found")
     return ResponseBase(message="Lấy thông tin bệnh nhân thành công", data=db_patient)  # Wrap response
-
-
-# @router.get("/", response_model=PaginatedResponse[PatientResponse])
-# def read_patients(
-#     skip: int = Query(0, ge=0, description="Số bản ghi bỏ qua"),
-#     limit: int = Query(100, ge=1, le=100, description="Số bản ghi tối đa"),
-#     search: Optional[str] = Query(None, description="Tìm kiếm theo tên hoặc số điện thoại"),
-#     db: Session = Depends(get_db)
-# ):
-#     """
-#     Lấy danh sách bệnh nhân
-#     - Hỗ trợ tìm kiếm theo tên hoặc số điện thoại
-#     - Phân trang với skip và limit
-#     """
-#     repo = PatientService(db)
-#     if search:
-#         patients = repo.search_patients(search_term=search, skip=skip, limit=limit)
-#         total = repo.count_patients(search_term=search)  # Đếm tổng số bệnh nhân khớp với search
-#     else:
-#         patients = repo.get_patients(skip=skip, limit=limit)
-#         total = repo.count_patients()  # Đếm tất cả bệnh nhân
-#     page = (skip // limit) + 1
-#     total_pages = (total // limit) + (1 if total % limit else 0)
-#     meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)
-#     return PaginatedResponse(
-#         message="Patients retrieved successfully",
-#         data=patients,
-#         meta=meta
-#     )  # Wrap với pagination
 
 @router.get("/", response_model=PaginatedResponse[PatientResponse])
 def read_patients(
@@ -93,13 +65,14 @@ def read_patients(
 
 @router.put("/{patient_id}", response_model=ResponseBase[PatientResponse])
 def update_patient(
+    background_tasks: BackgroundTasks,
     patient_id: UUID,
     patient: PatientUpdate,                   # Request body cho update
     db: Session = Depends(get_db)
 ):
     """Cập nhật thông tin bệnh nhân"""
     repo = PatientService(db)
-    db_patient = repo.update_patient(patient_id=patient_id, patient_update=patient)
+    db_patient = repo.update_patient(patient_id=patient_id, patient_update=patient, background_tasks=background_tasks)
     if db_patient is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

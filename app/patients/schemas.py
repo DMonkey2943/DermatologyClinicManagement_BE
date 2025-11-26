@@ -97,13 +97,9 @@ class PatientForeignKeyResponse(BaseSchema):
     full_name: str
 
 class PatientLogin(BaseSchema):
-    phone_number: str
+    # phone_number: str
+    email: EmailStr
     password: str
-
-    @field_validator("phone_number")
-    @classmethod
-    def _check_phone(cls, v):
-        return validate_phone_number(v)
 
     # @field_validator("password")
     # @classmethod
@@ -117,6 +113,7 @@ class PatientTokenData(BaseSchema):
     """Schema cho dữ liệu trong token"""
     id: UUID
     full_name: Optional[str] = None
+    email: EmailStr
     phone_number: str
 
 class LoginResponseData(BaseSchema):

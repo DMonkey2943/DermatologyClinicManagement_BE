@@ -7,6 +7,8 @@ from datetime import datetime
 import bcrypt
 from app.patients.models import Patient
 from app.patients.schemas import PatientCreate, PatientTokenData, PatientUpdate
+from app.utils.email import send_email_async
+from fastapi import BackgroundTasks  # Để chạy async task trong sync context nếu cần
 
 class PatientService:
     """Service class để xử lý logic liên quan đến Patient"""
@@ -31,20 +33,21 @@ class PatientService:
         #     .filter(User.username == patient_in.get("username"))
         #     .first()
         # )
-        patient = self.get_patient_by_phone_number(patient_in.get("phone_number", ""))
+        # patient = self.get_patient_by_phone_number(patient_in.get("phone_number", ""))
+        patient = self.get_patient_by_email(patient_in.get("email", ""))
         if not patient:
             # return None
-            raise HTTPException(status_code=401, detail="Số điện thoại không tồn tại")
+            raise HTTPException(status_code=401, detail="Email không tồn tại")
         
         if not patient.password:
             raise HTTPException(status_code=401, detail="Bạn chưa có tài khoản. Hãy liên hệ với phòng khám để được cấp tài khoản!")
 
         if not self.verify_password(patient_in.get("password", ""), patient.password):
-            raise HTTPException(status_code=401, detail="Số điện thoại hoặc mật khẩu chưa chính xác")
+            raise HTTPException(status_code=401, detail="Email hoặc mật khẩu chưa chính xác")
             
         return PatientTokenData.model_validate(patient)
 
-    def create_patient(self, patient_in: PatientCreate) -> Patient:
+    def create_patient(self, patient_in: PatientCreate, background_tasks: BackgroundTasks) -> Patient:
         """Tạo bệnh nhân mới"""
         password = None
         if patient_in.password:
@@ -77,6 +80,26 @@ class PatientService:
         self.db.add(db_patient)
         self.db.commit()           # Commit transaction
         self.db.refresh(db_patient)   # Refresh để lấy ID và timestamp
+
+        # Gửi email async qua background task nếu có password và email
+        if(patient_in.password and patient_in.email):
+            subject = "[FORSKIN] THÔNG TIN TÀI KHOẢN BỆNH NHÂN HỆ THỐNG QUẢN LÝ PHÒNG KHÁM DA LIỄU"
+            body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <h3>Xin chào {db_patient.full_name},</h3>
+                    <p>Tài khoản bệnh nhân của bạn đã được tạo thành công trên hệ thống quản lý phòng khám.</p>
+                    <div style="background:#f4f4f4; padding:15px; border-radius:8px; margin:20px 0;">
+                        <p><strong>Email đăng nhập:</strong> {db_patient.email}</p>
+                        {f'<p><strong>Mật khẩu tạm:</strong> {patient_in.password}</p>' if patient_in.password else ''}
+                    </div>
+                    <p>Vui lòng đổi ngay sau khi đăng nhập!</p>
+                    <p><a href="http://localhost:3000/signin-patient" style="color:#0066cc;">Đăng nhập ngay</a></p>
+                </body>
+            </html>
+            """
+            background_tasks.add_task(send_email_async, db_patient.email, subject, body)
+
         return db_patient
 
     # @staticmethod
@@ -134,7 +157,7 @@ class PatientService:
             )
         return query.count()
     
-    def update_patient(self, patient_id: UUID, patient_update: PatientUpdate) -> Optional[Patient]:
+    def update_patient(self, patient_id: UUID, patient_update: PatientUpdate, background_tasks: BackgroundTasks) -> Optional[Patient]:
         """Cập nhật thông tin bệnh nhân"""
         db_patient = self.get_patient_by_id(patient_id)
         
@@ -153,6 +176,26 @@ class PatientService:
         
         self.db.commit()
         self.db.refresh(db_patient)
+
+        # Gửi email async qua background task nếu có password và email
+        if(patient_update.password and patient_update.email):
+            subject = "[FORSKIN] CẬP NHẬT MẬT KHẨU TÀI KHOẢN BỆNH NHÂN HỆ THỐNG QUẢN LÝ PHÒNG KHÁM DA LIỄU"
+            body = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <h3>Xin chào {db_patient.full_name},</h3>
+                    <p>Tài khoản bệnh nhân của bạn đã được cập nhật thành công trên hệ thống quản lý phòng khám.</p>
+                    <div style="background:#f4f4f4; padding:15px; border-radius:8px; margin:20px 0;">
+                        <p><strong>Email đăng nhập:</strong> {db_patient.email}</p>
+                        <p><strong>Mật khẩu mới:</strong> {update_data['password']}</p>
+                    </div>
+                    <p>Vui lòng đổi ngay sau khi đăng nhập!</p>
+                    <p><a href="http://localhost:3000/signin-patient" style="color:#0066cc;">Đăng nhập ngay</a></p>
+                </body>
+            </html>
+            """
+            background_tasks.add_task(send_email_async, db_patient.email, subject, body)
+
         return db_patient
 
     def delete_patient(self, patient_id: UUID) -> bool:
@@ -168,6 +211,13 @@ class PatientService:
     def get_patient_by_phone_number(self, phone_number: str) -> Optional[Patient]:
         """Lấy patient theo phone_number"""
         db_patient = self.db.query(Patient).filter(and_(Patient.phone_number == phone_number, Patient.deleted_at.is_(None))).first()
+        if not db_patient:
+            return None
+        return db_patient
+    
+    def get_patient_by_email(self, email: str) -> Optional[Patient]:
+        """Lấy patient theo email"""
+        db_patient = self.db.query(Patient).filter(and_(Patient.email == email, Patient.deleted_at.is_(None))).first()
         if not db_patient:
             return None
         return db_patient
