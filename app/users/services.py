@@ -147,18 +147,18 @@ class UserService:
     # @staticmethod
     def get_user_by_id(self, user_id: UUID) -> Optional[User]:
         """Lấy user theo ID"""
-        db_user = self.db.query(User).filter(and_(User.id == user_id, User.deleted_at.is_(None))).first()
+        db_user = self.db.query(User).filter(and_(User.id == user_id)).first()
         if not db_user:
             return None
         return db_user
 
     # @staticmethod
-    def get_user_by_id(self, user_id: UUID) -> Optional[User]:
-        """Lấy user theo ID"""
-        db_user = self.db.query(User).filter(and_(User.id == user_id, User.deleted_at.is_(None))).first()
-        if not db_user:
-            return None
-        return db_user
+    # def get_user_by_id(self, user_id: UUID) -> Optional[User]:
+    #     """Lấy user theo ID"""
+    #     db_user = self.db.query(User).filter(and_(User.id == user_id, User.deleted_at.is_(None))).first()
+    #     if not db_user:
+    #         return None
+    #     return db_user
     
     def get_user_by_email(self, email: str) -> Optional[User]:
         """Lấy user theo email"""

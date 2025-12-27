@@ -95,6 +95,7 @@ class PatientForeignKeyResponse(BaseSchema):
     """Schema trả về thông tin Patient trong các quan hệ Foreign Key"""
     id: UUID
     full_name: str
+    phone_number: str
 
 class PatientLogin(BaseSchema):
     # phone_number: str

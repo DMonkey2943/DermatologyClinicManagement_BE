@@ -36,4 +36,4 @@ class AcneClassifier:
         return self.classes[predicted.item()]
 
 # Khởi tạo mô hình
-acne_classifier = AcneClassifier(model_path='app/acne_severity_grading/models/acne_severity_grading_model.pth')
+acne_classifier = AcneClassifier(model_path='app/acne_severity_grading/models/acne_severity_grading_model_v3.pth')

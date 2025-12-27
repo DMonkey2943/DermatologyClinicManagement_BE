@@ -132,7 +132,7 @@ class AppointmentService:
 
         # Lọc theo trạng thái
         # if status:
-        if status and not upcoming:
+        if status:
             query = query.filter(Appointment.status.in_(status))
 
         # Lọc theo ngày
@@ -218,7 +218,7 @@ class AppointmentService:
 
         # Lọc theo trạng thái
         # if status:
-        if status and not upcoming:
+        if status:
             query = query.filter(Appointment.status.in_(status))
 
         # Lọc theo ngày

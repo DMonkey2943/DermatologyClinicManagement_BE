@@ -138,7 +138,7 @@ class UserTokenData(BaseSchema):
     full_name: Optional[str] = None
     email: EmailStr
     phone_number: str
-    avatar: str
+    avatar: Optional[str] = None
     role: UserRoleEnum
 
 class LoginResponseData(BaseSchema):

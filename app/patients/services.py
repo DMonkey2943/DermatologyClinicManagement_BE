@@ -105,7 +105,7 @@ class PatientService:
     # @staticmethod
     def get_patient_by_id(self, patient_id: UUID) -> Optional[Patient]:
         """Lấy thông tin bệnh nhân theo ID"""
-        db_patient = self.db.query(Patient).filter(and_(Patient.id == patient_id, Patient.deleted_at.is_(None))).first()
+        db_patient = self.db.query(Patient).filter(and_(Patient.id == patient_id)).first()
         if not db_patient:
             return None
         return db_patient
@@ -178,23 +178,24 @@ class PatientService:
         self.db.refresh(db_patient)
 
         # Gửi email async qua background task nếu có password và email
-        if(patient_update.password and patient_update.email):
-            subject = "[FORSKIN] CẬP NHẬT MẬT KHẨU TÀI KHOẢN BỆNH NHÂN HỆ THỐNG QUẢN LÝ PHÒNG KHÁM DA LIỄU"
+        if(patient_update.password):
+            patient_email = patient_update.email or db_patient.email
+            subject = "[FORSKIN] THÔNG TIN TÀI KHOẢN BỆNH NHÂN HỆ THỐNG QUẢN LÝ PHÒNG KHÁM DA LIỄU"
             body = f"""
             <html>
                 <body style="font-family: Arial, sans-serif; line-height: 1.6;">
                     <h3>Xin chào {db_patient.full_name},</h3>
-                    <p>Tài khoản bệnh nhân của bạn đã được cập nhật thành công trên hệ thống quản lý phòng khám.</p>
+                    <p>Tài khoản bệnh nhân của bạn đã được tạo thành công trên hệ thống quản lý phòng khám.</p>
                     <div style="background:#f4f4f4; padding:15px; border-radius:8px; margin:20px 0;">
-                        <p><strong>Email đăng nhập:</strong> {db_patient.email}</p>
-                        <p><strong>Mật khẩu mới:</strong> {update_data['password']}</p>
+                        <p><strong>Email đăng nhập:</strong> {patient_email}</p>
+                        <p><strong>Mật khẩu:</strong> {patient_update.password}</p>
                     </div>
                     <p>Vui lòng đổi ngay sau khi đăng nhập!</p>
                     <p><a href="http://localhost:3000/signin-patient" style="color:#0066cc;">Đăng nhập ngay</a></p>
                 </body>
             </html>
             """
-            background_tasks.add_task(send_email_async, db_patient.email, subject, body)
+            background_tasks.add_task(send_email_async, patient_email, subject, body)
 
         return db_patient
 

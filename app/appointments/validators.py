@@ -11,16 +11,25 @@ def validate_appointment_time(value: time) -> time:
     """Validate giờ hẹn"""
 
     # Giờ hợp lệ cho Thứ Hai - Thứ Sáu
-    weekday_morning_start = time(11, 0)  # 11:00
-    weekday_morning_end = time(13, 0)    # 13:00
-    weekday_evening_start = time(17, 0)  # 17:00
-    weekday_evening_end = time(21, 0)    # 20:00
+    # weekday_morning_start = time(11, 0)  # 11:00
+    # weekday_morning_end = time(13, 0)    # 13:00
+    # weekday_evening_start = time(17, 0)  # 17:00
+    # weekday_evening_end = time(21, 0)    # 20:00
+    # if not (
+    #     (weekday_morning_start <= value <= weekday_morning_end) or
+    #     (weekday_evening_start <= value <= weekday_evening_end)
+    # ):
+    #     raise ValueError(
+    #         f"Giờ hẹn ({value}) phải từ 11:00-13:00 hoặc 17:00-20:00."
+    #     )
+
+    weekday_start = time(10, 0)  # 11:00
+    weekday_end = time(21, 0)    # 21:00
     if not (
-        (weekday_morning_start <= value <= weekday_morning_end) or
-        (weekday_evening_start <= value <= weekday_evening_end)
+        (weekday_start <= value <= weekday_end)
     ):
         raise ValueError(
-            f"Giờ hẹn ({value}) phải từ 11:00-13:00 hoặc 17:00-20:00."
+            f"Giờ hẹn ({value}) phải từ 10:00-21:00."
         )
     
     return value

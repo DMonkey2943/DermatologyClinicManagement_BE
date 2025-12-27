@@ -99,3 +99,39 @@ def read_appointments_by_patient(
     total_pages = (total // limit) + (1 if total % limit else 0)
     meta = PaginationMeta(total=total, page=page, limit=limit, total_pages=total_pages)
     return PaginatedResponse(message="Lấy danh sách lịch hẹn đã đặt thành công", data=appointments, meta=meta)
+
+@router.put("/{appointment_id}/cancel", response_model=ResponseBase[AppointmentResponse])
+@patient_protected_route()
+def cancel_appointment_by_patient(
+    appointment_id: UUID,
+    CREDENTIALS: PatientAuthCredentialDepend,
+    DB: Session = Depends(get_db),
+    CURRENT_PATIENT=None,
+):
+    """
+    Hủy lịch hẹn bởi bệnh nhân
+    - Chỉ hủy nếu lịch hẹn thuộc về bệnh nhân hiện tại và đang ở trạng thái SCHEDULED hoặc WAITING
+    - Cập nhật trạng thái thành CANCELLED
+    - Trả về thông tin lịch hẹn đã cập nhật
+    """
+    repo = AppointmentService(DB)
+    
+    # Lấy lịch hẹn theo ID
+    db_appointment = DB.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not db_appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lịch hẹn không tồn tại")
+    
+    # Kiểm tra quyền sở hữu
+    if db_appointment.patient_id != CURRENT_PATIENT.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền hủy lịch hẹn này")
+    
+    # Kiểm tra trạng thái có thể hủy
+    if db_appointment.status not in [AppointmentStatusEnum.SCHEDULED]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chỉ có thể hủy lịch hẹn ở trạng thái Đã đặt lịch")
+    
+    # Cập nhật trạng thái
+    db_appointment.status = AppointmentStatusEnum.CANCELLED
+    DB.commit()
+    DB.refresh(db_appointment)
+    
+    return ResponseBase(message="Hủy lịch hẹn thành công", data=db_appointment)
